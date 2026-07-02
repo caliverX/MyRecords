@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">MyRecord</string>
+    <string name="accessibility_description">MyRecord Call Helper</string>
+</resources>

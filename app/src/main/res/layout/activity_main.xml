@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="32dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="MyRecord Setup"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp"/>
+        
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Complete all 3 steps below to activate automatic call recording."
+        android:textAlignment="center"
+        android:layout_marginBottom="48dp"/>
+
+    <Button
+        android:id="@+id/btnPermissions"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="1. Grant Microphone Access"
+        android:layout_marginBottom="16dp"/>
+
+    <Button
+        android:id="@+id/btnAccessibility"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="2. Enable Accessibility Helper"
+        android:layout_marginBottom="16dp"/>
+
+    <Button
+        android:id="@+id/btnBattery"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="3. Disable Battery Restrictions"
+        android:layout_marginBottom="32dp"/>
+
+    <Button
+        android:id="@+id/btnViewRecords"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="View My Recordings"
+        android:backgroundTint="#4CAF50"/> 
+
+</LinearLayout>
