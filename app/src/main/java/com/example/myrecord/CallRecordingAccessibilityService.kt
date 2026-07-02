@@ -13,10 +13,13 @@ class CallRecordingAccessibilityService : AccessibilityService() {
 
     private val TAG = "MyRecordService"
     private var audioRecorderHelper: AudioRecorderHelper? = null
-    
+
     // Track the last known target app to manage switching between apps
     private var lastTargetPackage: String? = null
-    
+
+    // The human-readable name to tag the current recording with
+    private var currentAppName: String = "UnknownCall"
+
     // Tools for the 1-second background monitor
     private val handler = Handler(Looper.getMainLooper())
     private var isMonitoring = false
@@ -34,16 +37,16 @@ class CallRecordingAccessibilityService : AccessibilityService() {
 
             val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
             val telephonyManager = getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
-            
+
             // Allow RINGTONE (incoming call) or IN_COMMUNICATION (active voice) or OFFHOOK (active cellular)
             val isCallActive = audioManager.mode == AudioManager.MODE_IN_COMMUNICATION ||
-                               audioManager.mode == AudioManager.MODE_RINGTONE ||
-                               telephonyManager.callState == TelephonyManager.CALL_STATE_OFFHOOK ||
-                               telephonyManager.callState == TelephonyManager.CALL_STATE_RINGING
+                    audioManager.mode == AudioManager.MODE_RINGTONE ||
+                    telephonyManager.callState == TelephonyManager.CALL_STATE_OFFHOOK ||
+                    telephonyManager.callState == TelephonyManager.CALL_STATE_RINGING
 
             if (isCallActive && audioRecorderHelper?.isRecording == false) {
-                Log.d(TAG, "Call active! Starting recorder...")
-                audioRecorderHelper?.startRecording()
+                Log.d(TAG, "Call active! Starting recorder for $currentAppName...")
+                audioRecorderHelper?.startRecording(currentAppName)
             } else if (!isCallActive && audioRecorderHelper?.isRecording == true) {
                 Log.d(TAG, "Call ended. Stopping recorder...")
                 audioRecorderHelper?.stopRecording()
@@ -80,6 +83,9 @@ class CallRecordingAccessibilityService : AccessibilityService() {
                 audioRecorderHelper?.stopRecording()
             }
 
+            // Update the label BEFORE the monitor's next tick uses it
+            currentAppName = appName
+
             // If we enter a target app, turn ON the 1-second hardware monitor
             if (!isMonitoring) {
                 Log.d(TAG, "Target app opened. Starting 1-second audio monitor...")
@@ -87,11 +93,11 @@ class CallRecordingAccessibilityService : AccessibilityService() {
                 handler.post(monitorRunnable)
             }
             lastTargetPackage = packageName
-            
+
         } else {
-            val isSystemUI = packageName.contains("launcher") || 
-                             packageName.contains("systemui") || 
-                             packageName.contains("settings")
+            val isSystemUI = packageName.contains("launcher") ||
+                    packageName.contains("systemui") ||
+                    packageName.contains("settings")
 
             // If we completely leave the target apps, turn OFF the monitor and stop recording
             if (!isSystemUI) {
@@ -99,7 +105,8 @@ class CallRecordingAccessibilityService : AccessibilityService() {
                 isMonitoring = false
                 handler.removeCallbacks(monitorRunnable)
                 lastTargetPackage = null
-                
+                currentAppName = "UnknownCall"
+
                 if (audioRecorderHelper?.isRecording == true) {
                     audioRecorderHelper?.stopRecording()
                 }
