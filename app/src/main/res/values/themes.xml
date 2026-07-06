@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
-    <style name="Theme.MyRecord" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.MyRecord" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/brand_primary</item>
+        <item name="colorPrimaryDark">@color/brand_primary_variant</item>
+        <item name="colorAccent">@color/brand_primary</item>
+        <item name="colorSurface">@color/brand_card</item>
+        <item name="android:windowBackground">@color/brand_background</item>
+        <item name="android:textColorPrimary">@color/brand_ink</item>
+        <item name="android:textColorSecondary">@color/brand_ink_muted</item>
+    </style>
 </resources>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="brand_primary">#7C93E8</color>
+    <color name="brand_primary_variant">#5A75D6</color>
+    <color name="brand_primary_soft">#1D2740</color>
+
+    <color name="brand_success">#4CC791</color>
+    <color name="brand_success_soft">#173226</color>
+    <color name="brand_recording">#F2777B</color>
+
+    <color name="brand_background">#121417</color>
+    <color name="brand_card">#1C1F24</color>
+    <color name="brand_divider">#2A2E35</color>
+
+    <color name="brand_ink">#EDEEF0</color>
+    <color name="brand_ink_muted">#9BA0A8</color>
+    <color name="brand_on_primary">#0E1116</color>
+</resources>

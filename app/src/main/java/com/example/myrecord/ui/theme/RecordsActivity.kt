@@ -10,6 +10,7 @@ import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import java.io.File
@@ -38,7 +39,7 @@ class RecordsActivity : AppCompatActivity() {
         if (!recordDir.exists() || recordDir.listFiles() == null) return
 
         val files = recordDir.listFiles()?.filter { it.extension == "m4a" } ?: return
-        
+
         // Sort files by newest first
         val sortedFiles = files.sortedByDescending { it.lastModified() }
 
@@ -61,7 +62,7 @@ class RecordsActivity : AppCompatActivity() {
         }
     }
 
-   private fun playAudio(file: File, button: Button) {
+    private fun playAudio(file: File, button: Button) {
         if (currentlyPlayingFile == file.absolutePath && mediaPlayer?.isPlaying == true) {
             // Stop logic
             mediaPlayer?.stop()
@@ -81,7 +82,7 @@ class RecordsActivity : AppCompatActivity() {
         } catch (e: Exception) {
             // Log it or ignore, we are about to overwrite it anyway
         }
-        mediaPlayer = null 
+        mediaPlayer = null
 
         // Start new audio
         mediaPlayer = MediaPlayer().apply {
@@ -93,8 +94,8 @@ class RecordsActivity : AppCompatActivity() {
                 Toast.makeText(this@RecordsActivity, "Could not play file: ${e.message}", Toast.LENGTH_SHORT).show()
                 return@apply
             }
-            setOnCompletionListener { 
-                button.text = "PLAY" 
+            setOnCompletionListener {
+                button.text = "PLAY"
                 currentlyPlayingFile = null
             }
         }
@@ -107,7 +108,7 @@ class RecordsActivity : AppCompatActivity() {
         mediaPlayer?.release()
         mediaPlayer = null
     }
-    
+
     // --- ADAPTER AND DATA CLASSES ---
 
     sealed class ListItem {
@@ -144,10 +145,26 @@ class RecordsActivity : AppCompatActivity() {
             } else if (holder is RecordViewHolder && item is ListItem.RecordItem) {
                 // Parse the filename (e.g. "WhatsApp_20260612_143000.m4a")
                 val parts = item.file.nameWithoutExtension.split("_")
-                holder.appNameText.text = if (parts.isNotEmpty()) parts[0] else "Unknown Call"
-                
+                val appName = if (parts.isNotEmpty() && parts[0].isNotBlank()) parts[0] else "Unknown"
+                holder.appNameText.text = appName
+
                 // Format the time from the file's metadata
                 holder.timeText.text = SimpleDateFormat("hh:mm a", Locale.US).format(Date(item.file.lastModified()))
+
+                // Avatar: first letter + a color cue per source app
+                holder.avatarText.text = appName.take(1).uppercase()
+                val avatarColorRes = when (appName.lowercase()) {
+                    "whatsapp" -> R.color.avatar_whatsapp
+                    "telegram" -> R.color.avatar_telegram
+                    "instagram" -> R.color.avatar_instagram
+                    "snapchat" -> R.color.avatar_snapchat
+                    "messenger" -> R.color.avatar_messenger
+                    "cellular" -> R.color.avatar_cellular
+                    else -> R.color.avatar_default
+                }
+                holder.avatarText.background.setTint(
+                    ContextCompat.getColor(holder.itemView.context, avatarColorRes)
+                )
 
                 holder.playBtn.setOnClickListener { onPlayClicked(item.file, holder.playBtn) }
             }
@@ -162,6 +179,7 @@ class RecordsActivity : AppCompatActivity() {
         inner class RecordViewHolder(view: View) : RecyclerView.ViewHolder(view) {
             val appNameText: TextView = view.findViewById(R.id.textAppName)
             val timeText: TextView = view.findViewById(R.id.textTime)
+            val avatarText: TextView = view.findViewById(R.id.textAvatar)
             val playBtn: Button = view.findViewById(R.id.btnPlay)
         }
     }

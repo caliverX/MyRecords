@@ -1,10 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#FF6200EE</color>
-    <color name="purple_700">#FF3700B3</color>
-    <color name="teal_200">#FF03DAC5</color>
-    <color name="teal_700">#FF018786</color>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <!-- Brand -->
+    <color name="brand_primary">#3457D5</color>
+    <color name="brand_primary_variant">#2540A6</color>
+    <color name="brand_primary_soft">#E8EDFC</color>
+
+    <!-- Status -->
+    <color name="brand_success">#1E8E5A</color>
+    <color name="brand_success_soft">#E4F5EC</color>
+    <color name="brand_recording">#E5484D</color>
+
+    <!-- Surfaces (light) -->
+    <color name="brand_background">#F7F7F9</color>
+    <color name="brand_card">#FFFFFF</color>
+    <color name="brand_divider">#E7E8EC</color>
+
+    <!-- Text -->
+    <color name="brand_ink">#12181F</color>
+    <color name="brand_ink_muted">#6B7078</color>
+    <color name="brand_on_primary">#FFFFFF</color>
+
+    <!-- Avatar accents (per source app, not brand logos — just a scan-ability cue) -->
+    <color name="avatar_whatsapp">#2FA36B</color>
+    <color name="avatar_telegram">#3390D0</color>
+    <color name="avatar_instagram">#B3357C</color>
+    <color name="avatar_snapchat">#D4A400</color>
+    <color name="avatar_messenger">#3C7EDB</color>
+    <color name="avatar_cellular">#5C6470</color>
+    <color name="avatar_default">#8A8F98</color>
 </resources>

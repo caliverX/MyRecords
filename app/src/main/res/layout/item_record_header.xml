@@ -3,10 +3,11 @@
     android:id="@+id/textDateHeader"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:paddingStart="8dp"
-    android:paddingTop="16dp"
+    android:paddingTop="18dp"
     android:paddingBottom="8dp"
     android:text="June 12, 2026"
-    android:textSize="14sp"
+    android:textAllCaps="true"
+    android:textSize="12sp"
+    android:letterSpacing="0.05"
     android:textStyle="bold"
-    android:textColor="#555555"/>
+    android:textColor="@color/brand_ink_muted" />
