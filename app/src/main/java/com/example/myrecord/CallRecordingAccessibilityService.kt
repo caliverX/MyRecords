@@ -1,36 +1,75 @@
 package com.example.myrecord
 
 import android.accessibilityservice.AccessibilityService
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
+import android.content.pm.ServiceInfo
 import android.media.AudioManager
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.os.PowerManager
 import android.telephony.TelephonyManager
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
+import androidx.core.app.NotificationCompat
 
 class CallRecordingAccessibilityService : AccessibilityService() {
 
     private val TAG = "MyRecordService"
+    private val CHANNEL_ID = "call_recording_channel"
+    private val NOTIFICATION_ID = 1001
+
     private var audioRecorderHelper: AudioRecorderHelper? = null
-
-    // Track the last known target app to manage switching between apps
     private var lastTargetPackage: String? = null
-
-    // The human-readable name to tag the current recording with
     private var currentAppName: String = "UnknownCall"
-
-    // Tools for the 1-second background monitor
     private val handler = Handler(Looper.getMainLooper())
     private var isMonitoring = false
+    private var wakeLock: PowerManager.WakeLock? = null
 
     override fun onServiceConnected() {
         super.onServiceConnected()
         audioRecorderHelper = AudioRecorderHelper(this)
+
+        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MyRecord::CallMonitorWakeLock")
+
+        // Required so Android treats this as a genuine foreground service and
+        // lifts the background microphone restriction — WakeLock alone does not do this.
+        startForegroundNotification()
+
         Log.d(TAG, "Accessibility Service Connected")
     }
 
-    // 1. THE MONITOR: This runs every 1 second ONLY while a target app is open
+    private fun startForegroundNotification() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                "Call Recording Service",
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = "Keeps call recording active in the background"
+            }
+            val manager = getSystemService(NotificationManager::class.java)
+            manager.createNotificationChannel(channel)
+        }
+
+        val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle("MyRecord is active")
+            .setContentText("Monitoring for calls to record")
+            .setSmallIcon(android.R.drawable.ic_btn_speak_now)
+            .setOngoing(true)
+            .build()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
+        } else {
+            startForeground(NOTIFICATION_ID, notification)
+        }
+    }
+
     private val monitorRunnable = object : Runnable {
         override fun run() {
             if (!isMonitoring) return
@@ -38,7 +77,6 @@ class CallRecordingAccessibilityService : AccessibilityService() {
             val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
             val telephonyManager = getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
 
-            // Allow RINGTONE (incoming call) or IN_COMMUNICATION (active voice) or OFFHOOK (active cellular)
             val isCallActive = audioManager.mode == AudioManager.MODE_IN_COMMUNICATION ||
                     audioManager.mode == AudioManager.MODE_RINGTONE ||
                     telephonyManager.callState == TelephonyManager.CALL_STATE_OFFHOOK ||
@@ -52,18 +90,15 @@ class CallRecordingAccessibilityService : AccessibilityService() {
                 audioRecorderHelper?.stopRecording()
             }
 
-            // Loop this check again in 1 second
             handler.postDelayed(this, 1000)
         }
     }
 
-    // 2. THE SCREEN CHECKER: This just turns the 1-second monitor ON or OFF
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null || event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
 
         val packageName = event.packageName?.toString() ?: return
 
-        // Map the package to a readable name
         val appName = when {
             packageName.contains("whatsapp") -> "WhatsApp"
             packageName.contains("com.android.dialer") -> "Cellular"
@@ -77,19 +112,16 @@ class CallRecordingAccessibilityService : AccessibilityService() {
         val isTargetApp = appName != "Unknown"
 
         if (isTargetApp) {
-            // Split files if we switch directly from WhatsApp to Snapchat
             if (isMonitoring && lastTargetPackage != packageName && lastTargetPackage != null) {
-                Log.d(TAG, "Switched directly to a different target app. Splitting files...")
                 audioRecorderHelper?.stopRecording()
             }
 
-            // Update the label BEFORE the monitor's next tick uses it
             currentAppName = appName
 
-            // If we enter a target app, turn ON the 1-second hardware monitor
             if (!isMonitoring) {
-                Log.d(TAG, "Target app opened. Starting 1-second audio monitor...")
+                Log.d(TAG, "Target app opened. Starting monitor and acquiring WakeLock...")
                 isMonitoring = true
+                wakeLock?.acquire(60 * 60 * 1000L)
                 handler.post(monitorRunnable)
             }
             lastTargetPackage = packageName
@@ -99,9 +131,8 @@ class CallRecordingAccessibilityService : AccessibilityService() {
                     packageName.contains("systemui") ||
                     packageName.contains("settings")
 
-            // If we completely leave the target apps, turn OFF the monitor and stop recording
             if (!isSystemUI) {
-                Log.d(TAG, "Left target app. Stopping monitor and recorder...")
+                Log.d(TAG, "Left target app. Stopping monitor and releasing WakeLock...")
                 isMonitoring = false
                 handler.removeCallbacks(monitorRunnable)
                 lastTargetPackage = null
@@ -110,21 +141,30 @@ class CallRecordingAccessibilityService : AccessibilityService() {
                 if (audioRecorderHelper?.isRecording == true) {
                     audioRecorderHelper?.stopRecording()
                 }
+
+                if (wakeLock?.isHeld == true) {
+                    wakeLock?.release()
+                }
             }
         }
     }
 
     override fun onInterrupt() {
         Log.d(TAG, "Service Interrupted")
-        isMonitoring = false
-        handler.removeCallbacks(monitorRunnable)
-        audioRecorderHelper?.cleanup()
+        cleanup()
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        cleanup()
+    }
+
+    private fun cleanup() {
         isMonitoring = false
         handler.removeCallbacks(monitorRunnable)
         audioRecorderHelper?.cleanup()
+        if (wakeLock?.isHeld == true) {
+            wakeLock?.release()
+        }
     }
 }

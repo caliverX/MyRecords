@@ -39,28 +39,25 @@ class AudioRecorderHelper(private val context: Context) {
         val recorder = MediaRecorder()
 
         try {
-            // Attempt 1: VOICE_COMMUNICATION for call clarity
-            configure(recorder, MediaRecorder.AudioSource.VOICE_COMMUNICATION)
+            // Standard microphone input, permitted via RECORD_AUDIO
+            configure(recorder, MediaRecorder.AudioSource.MIC)
             recorder.prepare()
             recorder.start()
             mediaRecorder = recorder
             isRecording = true
-            Log.d("AudioRecorder", "Started with VOICE_COMMUNICATION: ${audioFile.absolutePath}")
+            Log.d("AudioRecorder", "Started successfully with MIC: ${audioFile.absolutePath}")
         } catch (e: Exception) {
-            Log.e("AudioRecorder", "VOICE_COMMUNICATION failed, retrying with MIC: ${e.message}")
-
-            // Cleanup the failed instance before creating a new one
+            Log.e("AudioRecorder", "MIC failed: ${e.message}")
             recorder.release()
 
             val freshRecorder = MediaRecorder()
             try {
-                // Attempt 2: Fresh recorder for the fallback
-                configure(freshRecorder, MediaRecorder.AudioSource.MIC)
+                configure(freshRecorder, MediaRecorder.AudioSource.DEFAULT)
                 freshRecorder.prepare()
                 freshRecorder.start()
                 mediaRecorder = freshRecorder
                 isRecording = true
-                Log.d("AudioRecorder", "Started with MIC fallback: ${audioFile.absolutePath}")
+                Log.d("AudioRecorder", "Started with DEFAULT fallback: ${audioFile.absolutePath}")
             } catch (e2: Exception) {
                 Log.e("AudioRecorder", "CRITICAL: Recording start failed completely: ${e2.message}")
                 freshRecorder.release()
