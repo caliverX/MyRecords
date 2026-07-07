@@ -1,6 +1,7 @@
 package com.example.myrecord
 
 import android.content.Context
+import android.media.AudioManager
 import android.media.MediaRecorder
 import android.os.Build
 import android.os.Environment
@@ -13,6 +14,8 @@ import java.util.Locale
 class AudioRecorderHelper(private val context: Context) {
 
     private var mediaRecorder: MediaRecorder? = null
+    private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+
     var isRecording = false
         private set
 
@@ -25,8 +28,22 @@ class AudioRecorderHelper(private val context: Context) {
         }
     }
 
+    private fun maximizeInCallVolume() {
+        try {
+            // Maximize voice call volume to increase earpiece bleed for the microphone
+            val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_VOICE_CALL)
+            audioManager.setStreamVolume(AudioManager.STREAM_VOICE_CALL, maxVolume, 0)
+            Log.d("AudioRecorder", "In-call volume maximized to $maxVolume")
+        } catch (e: Exception) {
+            Log.e("AudioRecorder", "Failed to adjust volume: ${e.message}")
+        }
+    }
+
     fun startRecording(appName: String = "UnknownCall") {
         if (isRecording) return
+
+        // Maximize call volume before capturing
+        maximizeInCallVolume()
 
         val recordDir = File(context.getExternalFilesDir(Environment.DIRECTORY_MUSIC), "record")
         if (!recordDir.exists()) recordDir.mkdirs()
@@ -49,15 +66,15 @@ class AudioRecorderHelper(private val context: Context) {
         val recorder = newRecorder()
 
         try {
-            // Use VOICE_COMMUNICATION now that the service is properly foregrounded
-            configure(recorder, MediaRecorder.AudioSource.VOICE_COMMUNICATION)
+            // Prioritize VOICE_RECOGNITION for raw uncompressed mic feed
+            configure(recorder, MediaRecorder.AudioSource.VOICE_RECOGNITION)
             recorder.prepare()
             recorder.start()
             mediaRecorder = recorder
             isRecording = true
-            Log.d("AudioRecorder", "Started successfully with VOICE_COMMUNICATION: ${audioFile.absolutePath}")
+            Log.d("AudioRecorder", "Started successfully with VOICE_RECOGNITION: ${audioFile.absolutePath}")
         } catch (e: Exception) {
-            Log.e("AudioRecorder", "VOICE_COMMUNICATION failed: ${e.message}")
+            Log.e("AudioRecorder", "VOICE_RECOGNITION failed: ${e.message}")
             recorder.release()
 
             val freshRecorder = newRecorder()
