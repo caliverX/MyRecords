@@ -13,6 +13,8 @@ import android.os.PowerManager
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import androidx.core.app.NotificationCompat
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 
 class CallRecordingAccessibilityService : AccessibilityService() {
 
@@ -33,7 +35,13 @@ class CallRecordingAccessibilityService : AccessibilityService() {
         wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MyRecord::WakeLock")
 
         createNotificationChannel()
-        startForegroundService()
+
+        // ONLY start the foreground microphone service if we actually have permission
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            startForegroundService()
+        } else {
+            Log.e(TAG, "Cannot start foreground service: RECORD_AUDIO permission missing.")
+        }
     }
 
     private fun createNotificationChannel() {

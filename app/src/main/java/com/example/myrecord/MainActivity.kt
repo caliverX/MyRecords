@@ -98,10 +98,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun requestBasicPermissions() {
-        val permissions = arrayOf(
+        val permissions = mutableListOf(
             Manifest.permission.RECORD_AUDIO,
             Manifest.permission.READ_PHONE_STATE
         )
+
+        // Add Notification permission for Android 13+ (API 33+)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            permissions.add(Manifest.permission.POST_NOTIFICATIONS)
+        }
 
         val neededPermissions = permissions.filter {
             ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
@@ -110,7 +115,7 @@ class MainActivity : AppCompatActivity() {
         if (neededPermissions.isNotEmpty()) {
             ActivityCompat.requestPermissions(this, neededPermissions.toTypedArray(), PERMISSION_REQUEST_CODE)
         } else {
-            Toast.makeText(this, "Microphone permissions already granted!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Permissions already granted!", Toast.LENGTH_SHORT).show()
         }
     }
 
