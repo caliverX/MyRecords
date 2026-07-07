@@ -68,21 +68,14 @@ class RecordsActivity : AppCompatActivity() {
             mediaPlayer?.stop()
             mediaPlayer?.release()
             mediaPlayer = null
-            button.text = "PLAY"
+            button.setText(R.string.btn_play) // Use Resource ID
             currentlyPlayingFile = null
             return
         }
 
-        // Before stopping, check if media player is actually initialized
-        try {
-            mediaPlayer?.apply {
-                if (isPlaying) stop()
-                release()
-            }
-        } catch (e: Exception) {
-            // Log it or ignore, we are about to overwrite it anyway
-        }
-        mediaPlayer = null
+        // Stop any existing player before starting
+        mediaPlayer?.stop()
+        mediaPlayer?.release()
 
         // Start new audio
         mediaPlayer = MediaPlayer().apply {
@@ -91,15 +84,19 @@ class RecordsActivity : AppCompatActivity() {
                 prepare()
                 start()
             } catch (e: Exception) {
-                Toast.makeText(this@RecordsActivity, "Could not play file: ${e.message}", Toast.LENGTH_SHORT).show()
+                // Correct way to pass the error message into the string resource
+                val errorMessage = getString(R.string.error_could_not_play, e.message)
+                Toast.makeText(this@RecordsActivity, errorMessage, Toast.LENGTH_SHORT).show()
                 return@apply
             }
+
             setOnCompletionListener {
-                button.text = "PLAY"
+                button.setText(R.string.btn_play) // Use Resource ID
                 currentlyPlayingFile = null
             }
         }
-        button.text = "STOP"
+
+        button.setText(R.string.btn_stop) // Use Resource ID
         currentlyPlayingFile = file.absolutePath
     }
 

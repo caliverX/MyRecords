@@ -1,4 +1,8 @@
 <resources>
     <string name="app_name">MyRecord</string>
     <string name="accessibility_description">MyRecord Call Helper</string>
+    <string name="progress_text">%1$d of %2$d</string>
+    <string name="btn_play">Play</string>
+    <string name="btn_stop">Stop</string>
+    <string name="error_could_not_play">Could not play file: %1$s</string>
 </resources>

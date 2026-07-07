@@ -2,6 +2,7 @@ package com.example.myrecord
 
 import android.content.Context
 import android.media.MediaRecorder
+import android.os.Build
 import android.os.Environment
 import android.util.Log
 import java.io.File
@@ -14,6 +15,15 @@ class AudioRecorderHelper(private val context: Context) {
     private var mediaRecorder: MediaRecorder? = null
     var isRecording = false
         private set
+
+    private fun newRecorder(): MediaRecorder {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            MediaRecorder(context)
+        } else {
+            @Suppress("DEPRECATION")
+            MediaRecorder()
+        }
+    }
 
     fun startRecording(appName: String = "UnknownCall") {
         if (isRecording) return
@@ -36,21 +46,21 @@ class AudioRecorderHelper(private val context: Context) {
             }
         }
 
-        val recorder = MediaRecorder()
+        val recorder = newRecorder()
 
         try {
-            // Standard microphone input, permitted via RECORD_AUDIO
-            configure(recorder, MediaRecorder.AudioSource.MIC)
+            // Use VOICE_COMMUNICATION now that the service is properly foregrounded
+            configure(recorder, MediaRecorder.AudioSource.VOICE_COMMUNICATION)
             recorder.prepare()
             recorder.start()
             mediaRecorder = recorder
             isRecording = true
-            Log.d("AudioRecorder", "Started successfully with MIC: ${audioFile.absolutePath}")
+            Log.d("AudioRecorder", "Started successfully with VOICE_COMMUNICATION: ${audioFile.absolutePath}")
         } catch (e: Exception) {
-            Log.e("AudioRecorder", "MIC failed: ${e.message}")
+            Log.e("AudioRecorder", "VOICE_COMMUNICATION failed: ${e.message}")
             recorder.release()
 
-            val freshRecorder = MediaRecorder()
+            val freshRecorder = newRecorder()
             try {
                 configure(freshRecorder, MediaRecorder.AudioSource.DEFAULT)
                 freshRecorder.prepare()

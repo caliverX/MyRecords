@@ -73,8 +73,11 @@ class MainActivity : AppCompatActivity() {
         setBadgeState(badgeStep2, accessibilityOn, "2")
         setBadgeState(badgeStep3, batteryUnrestricted, "3")
 
+        // ... inside your update logic ...
         val completed = listOf(micGranted && phoneStateGranted, accessibilityOn, batteryUnrestricted).count { it }
-        textProgressCount.text = "$completed of 3"
+
+       // Use getString with the resource ID and the two integer arguments
+        textProgressCount.text = getString(R.string.progress_text, completed, 3)
     }
 
     private fun setBadgeState(badge: TextView, done: Boolean, stepNumber: String) {
