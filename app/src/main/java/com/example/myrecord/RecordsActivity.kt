@@ -17,6 +17,7 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import android.util.Log
 
 class RecordsActivity : AppCompatActivity() {
 
@@ -64,18 +65,32 @@ class RecordsActivity : AppCompatActivity() {
 
     private fun playAudio(file: File, button: Button) {
         if (currentlyPlayingFile == file.absolutePath && mediaPlayer?.isPlaying == true) {
-            // Stop logic
-            mediaPlayer?.stop()
-            mediaPlayer?.release()
+            // Stop logic for the currently playing file
+            try {
+                mediaPlayer?.apply {
+                    if (isPlaying) stop()
+                    release()
+                }
+            } catch (e: Exception) {
+                Log.e("RecordsActivity", "Error releasing previous player: ${e.message}")
+            }
             mediaPlayer = null
+
             button.setText(R.string.btn_play) // Use Resource ID
             currentlyPlayingFile = null
             return
         }
 
-        // Stop any existing player before starting
-        mediaPlayer?.stop()
-        mediaPlayer?.release()
+        // Stop any existing player before starting a new one
+        try {
+            mediaPlayer?.apply {
+                if (isPlaying) stop()
+                release()
+            }
+        } catch (e: Exception) {
+            Log.e("RecordsActivity", "Error releasing previous player: ${e.message}")
+        }
+        mediaPlayer = null
 
         // Start new audio
         mediaPlayer = MediaPlayer().apply {
@@ -102,7 +117,14 @@ class RecordsActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        mediaPlayer?.release()
+        try {
+            mediaPlayer?.apply {
+                if (isPlaying) stop()
+                release()
+            }
+        } catch (e: Exception) {
+            Log.e("RecordsActivity", "Error releasing player on destroy: ${e.message}")
+        }
         mediaPlayer = null
     }
 
