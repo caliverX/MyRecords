@@ -72,9 +72,12 @@ class CallRecordingAccessibilityService : AccessibilityService() {
 
         val packageName = event.packageName?.toString() ?: ""
 
-        // Only process WhatsApp events. If the screen turns off (SystemUI), we ignore it
-        // rather than killing the recording.
-        if (packageName.contains("whatsapp")) {
+        // Check if the event is from any of our target calling apps
+        val isTargetApp = packageName.contains("whatsapp") ||
+                packageName.contains("telegram") ||
+                packageName.contains("messenger")
+
+        if (isTargetApp) {
             val eventText = event.text?.joinToString(" ")?.lowercase() ?: ""
             val contentDesc = event.contentDescription?.toString()?.lowercase() ?: ""
             val combinedString = "$eventText $contentDesc"
@@ -89,11 +92,20 @@ class CallRecordingAccessibilityService : AccessibilityService() {
                     hasTimer
 
             if (isCallActive && !isMonitoring) {
-                Log.d(TAG, "WhatsApp Call detected via UI text. Starting recorder...")
+                Log.d(TAG, "Call detected via UI text in $packageName. Starting recorder...")
                 isMonitoring = true
                 recordingStartTime = System.currentTimeMillis()
                 if (wakeLock?.isHeld == false) wakeLock?.acquire(10 * 60 * 1000L)
-                audioRecorderHelper?.startRecording("WhatsApp_Call")
+
+                // Name the file based on the app being used
+                val appName = when {
+                    packageName.contains("whatsapp") -> "WhatsApp"
+                    packageName.contains("telegram") -> "Telegram"
+                    packageName.contains("messenger") -> "Messenger"
+                    else -> "UnknownApp"
+                }
+
+                audioRecorderHelper?.startRecording("${appName}_Call")
             } else if (isMonitoring) {
                 // Check if text indicates call termination
                 if (combinedString.contains("end") || combinedString.contains("ending") || combinedString.contains("call ended")) {
