@@ -38,38 +38,60 @@ class AudioRecorderHelper(private val context: Context) {
         }
     }
 
-    fun startRecording(appName: String = "UnknownCall") {
-        if (isRecording) return
+    private fun configure(recorder: MediaRecorder, source: Int, audioFile: File) {
+        recorder.apply {
+            setAudioSource(source)
+            setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+            setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+            setAudioSamplingRate(44100)
+            setAudioEncodingBitRate(96000)
+            setOutputFile(audioFile.absolutePath)
+        }
+    }
+
+    // Returns Boolean so the calling service knows whether hardware actually started
+    fun startRecording(appName: String = "UnknownCall"): Boolean {
+        if (isRecording) return true
 
         maximizeInCallVolume()
 
         val recordDir = File(context.getExternalFilesDir(Environment.DIRECTORY_MUSIC), "record")
         if (!recordDir.exists()) recordDir.mkdirs()
 
-        val safeAppName = appName.replace(Regex("[^A-Za-z0-9_-]"), "_")
         val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-        val audioFile = File(recordDir, "${safeAppName}_$timestamp.m4a")
+        val audioFile = File(recordDir, RecordingFileNaming.buildFileName(appName, timestamp))
 
         val recorder = newRecorder()
         try {
-            recorder.apply {
-                setAudioSource(MediaRecorder.AudioSource.VOICE_RECOGNITION)
-                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
-                setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
-                setAudioSamplingRate(44100)
-                setAudioEncodingBitRate(96000)
-                setOutputFile(audioFile.absolutePath)
-            }
+            configure(recorder, MediaRecorder.AudioSource.VOICE_RECOGNITION, audioFile)
             recorder.prepare()
             recorder.start()
             mediaRecorder = recorder
             isRecording = true
             Log.d("AudioRecorder", "Started with VOICE_RECOGNITION: ${audioFile.absolutePath}")
+            return true
         } catch (e: Exception) {
-            Log.e("AudioRecorder", "CRITICAL: VOICE_RECOGNITION failed: ${e.message}")
+            Log.e("AudioRecorder", "VOICE_RECOGNITION failed: ${e.message}")
             recorder.release()
-            mediaRecorder = null
-            isRecording = false
+
+            // Restored fallback: without this, a device that rejects
+            // VOICE_RECOGNITION never records at all, with no second attempt.
+            val freshRecorder = newRecorder()
+            return try {
+                configure(freshRecorder, MediaRecorder.AudioSource.DEFAULT, audioFile)
+                freshRecorder.prepare()
+                freshRecorder.start()
+                mediaRecorder = freshRecorder
+                isRecording = true
+                Log.d("AudioRecorder", "Started with DEFAULT fallback: ${audioFile.absolutePath}")
+                true
+            } catch (e2: Exception) {
+                Log.e("AudioRecorder", "CRITICAL: Recording start failed completely: ${e2.message}")
+                freshRecorder.release()
+                mediaRecorder = null
+                isRecording = false
+                false
+            }
         }
     }
 
