@@ -1,7 +1,6 @@
 package com.example.myrecord
 
 import android.accessibilityservice.AccessibilityService
-import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
@@ -25,7 +24,6 @@ class CallRecordingAccessibilityService : AccessibilityService() {
     private var audioRecorderHelper: AudioRecorderHelper? = null
     private var wakeLock: PowerManager.WakeLock? = null
     private var isMonitoring = false
-    private val handler = Handler(Looper.getMainLooper())
 
     override fun onServiceConnected() {
         super.onServiceConnected()
@@ -35,12 +33,8 @@ class CallRecordingAccessibilityService : AccessibilityService() {
         wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MyRecord::WakeLock")
 
         createNotificationChannel()
-
-        // ONLY start the foreground microphone service if we actually have permission
         if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
             startForegroundService()
-        } else {
-            Log.e(TAG, "Cannot start foreground service: RECORD_AUDIO permission missing.")
         }
     }
 
@@ -60,7 +54,7 @@ class CallRecordingAccessibilityService : AccessibilityService() {
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("MyRecord Active")
             .setContentText("Monitoring for incoming calls")
-            .setSmallIcon(android.R.drawable.ic_btn_speak_now) // Use a standard icon
+            .setSmallIcon(android.R.drawable.ic_btn_speak_now)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
 
@@ -76,24 +70,44 @@ class CallRecordingAccessibilityService : AccessibilityService() {
 
         val packageName = event.packageName?.toString() ?: ""
 
-        // Example: Only monitor WhatsApp
         if (packageName.contains("whatsapp")) {
-            if (!isMonitoring) {
-                Log.d(TAG, "Target app opened. Starting monitor...")
-                isMonitoring = true
-                if (wakeLock?.isHeld == false) wakeLock?.acquire(10 * 60 * 1000L) // 10 mins
+            // Read UI text elements to check if a call is actively taking place
+            val eventText = event.text?.joinToString(" ")?.lowercase() ?: ""
+            val contentDesc = event.contentDescription?.toString()?.lowercase() ?: ""
+            val combinedString = "$eventText $contentDesc"
 
-                // Trigger recording
+            // Look for call indicators
+            val isCallActive = combinedString.contains("ringing") ||
+                    combinedString.contains("calling") ||
+                    combinedString.contains("ongoing call") ||
+                    combinedString.contains("voice call") ||
+                    combinedString.contains("video call")
+
+            if (isCallActive && !isMonitoring) {
+                Log.d(TAG, "WhatsApp Call detected via UI text. Starting recorder...")
+                isMonitoring = true
+                if (wakeLock?.isHeld == false) wakeLock?.acquire(10 * 60 * 1000L)
                 audioRecorderHelper?.startRecording("WhatsApp_Call")
+            } else if (!isCallActive && isMonitoring) {
+                // Check if text indicates call termination or screen changed away from call
+                if (combinedString.contains("end") || combinedString.contains("ending")) {
+                    stopMonitoring()
+                }
             }
         } else {
-            // Left the app
+            // If we switched away from WhatsApp completely
             if (isMonitoring) {
-                Log.d(TAG, "Left target app. Stopping monitor...")
-                isMonitoring = false
-                audioRecorderHelper?.stopRecording()
-                if (wakeLock?.isHeld == true) wakeLock?.release()
+                stopMonitoring()
             }
+        }
+    }
+
+    private fun stopMonitoring() {
+        if (isMonitoring) {
+            Log.d(TAG, "Call ended or left app. Stopping recorder...")
+            isMonitoring = false
+            audioRecorderHelper?.stopRecording()
+            if (wakeLock?.isHeld == true) wakeLock?.release()
         }
     }
 
