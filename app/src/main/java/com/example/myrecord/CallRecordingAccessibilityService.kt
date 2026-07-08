@@ -6,8 +6,6 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.pm.ServiceInfo
 import android.os.Build
-import android.os.Handler
-import android.os.Looper
 import android.os.PowerManager
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
@@ -24,6 +22,10 @@ class CallRecordingAccessibilityService : AccessibilityService() {
     private var audioRecorderHelper: AudioRecorderHelper? = null
     private var wakeLock: PowerManager.WakeLock? = null
     private var isMonitoring = false
+
+    // Grace period tracking
+    private var recordingStartTime = 0L
+    private val GRACE_PERIOD_MS = 3000L
 
     override fun onServiceConnected() {
         super.onServiceConnected()
@@ -70,41 +72,46 @@ class CallRecordingAccessibilityService : AccessibilityService() {
 
         val packageName = event.packageName?.toString() ?: ""
 
+        // Only process WhatsApp events. If the screen turns off (SystemUI), we ignore it
+        // rather than killing the recording.
         if (packageName.contains("whatsapp")) {
-            // Read UI text elements to check if a call is actively taking place
             val eventText = event.text?.joinToString(" ")?.lowercase() ?: ""
             val contentDesc = event.contentDescription?.toString()?.lowercase() ?: ""
             val combinedString = "$eventText $contentDesc"
 
-            // Look for call indicators
+            // Look for call indicators, including the call timer (e.g., "00:01", "12:34")
+            val hasTimer = combinedString.matches(Regex(".*\\d{2}:\\d{2}.*"))
             val isCallActive = combinedString.contains("ringing") ||
                     combinedString.contains("calling") ||
                     combinedString.contains("ongoing call") ||
                     combinedString.contains("voice call") ||
-                    combinedString.contains("video call")
+                    combinedString.contains("video call") ||
+                    hasTimer
 
             if (isCallActive && !isMonitoring) {
                 Log.d(TAG, "WhatsApp Call detected via UI text. Starting recorder...")
                 isMonitoring = true
+                recordingStartTime = System.currentTimeMillis()
                 if (wakeLock?.isHeld == false) wakeLock?.acquire(10 * 60 * 1000L)
                 audioRecorderHelper?.startRecording("WhatsApp_Call")
-            } else if (!isCallActive && isMonitoring) {
-                // Check if text indicates call termination or screen changed away from call
-                if (combinedString.contains("end") || combinedString.contains("ending")) {
-                    stopMonitoring()
+            } else if (isMonitoring) {
+                // Check if text indicates call termination
+                if (combinedString.contains("end") || combinedString.contains("ending") || combinedString.contains("call ended")) {
+                    stopMonitoring(ignoreGracePeriod = false)
                 }
-            }
-        } else {
-            // If we switched away from WhatsApp completely
-            if (isMonitoring) {
-                stopMonitoring()
             }
         }
     }
 
-    private fun stopMonitoring() {
+    private fun stopMonitoring(ignoreGracePeriod: Boolean = false) {
         if (isMonitoring) {
-            Log.d(TAG, "Call ended or left app. Stopping recorder...")
+            val elapsedTime = System.currentTimeMillis() - recordingStartTime
+            if (!ignoreGracePeriod && elapsedTime < GRACE_PERIOD_MS) {
+                Log.w(TAG, "Ignored premature stop trigger! Elapsed time: ${elapsedTime}ms")
+                return
+            }
+
+            Log.d(TAG, "Call ended. Stopping recorder...")
             isMonitoring = false
             audioRecorderHelper?.stopRecording()
             if (wakeLock?.isHeld == true) wakeLock?.release()
@@ -124,5 +131,6 @@ class CallRecordingAccessibilityService : AccessibilityService() {
         isMonitoring = false
         audioRecorderHelper?.cleanup()
         if (wakeLock?.isHeld == true) wakeLock?.release()
+        recordingStartTime = 0L
     }
 }
