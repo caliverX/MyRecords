@@ -1,8 +1,17 @@
 <resources>
     <string name="app_name">MyRecord</string>
-    <string name="accessibility_description">MyRecord Call Helper</string>
-    <string name="progress_text">%1$d of %2$d</string>
-    <string name="btn_play">Play</string>
-    <string name="btn_stop">Stop</string>
-    <string name="error_could_not_play">Could not play file: %1$s</string>
+    <string name="progress_text">%1$d of %2$d complete</string>
+    <string name="btn_play">▶</string>
+    <string name="btn_stop">■</string>
+    <string name="error_could_not_play">Error: %1$s</string>
+    
+    <string name="btn_permissions">1. Microphone &amp; Phone</string>
+    <string name="btn_accessibility">2. Accessibility Service</string>
+    <string name="btn_battery">3. Battery Unrestricted</string>
+    <string name="btn_view_records">View Recordings</string>
+    <string name="status_waiting">IDLE — Waiting for VoIP call</string>
+    <string name="no_records">No recordings yet.\nMake a WhatsApp or Messenger call.</string>
+    
+    <!-- Required by accessibility_service_config.xml -->
+    <string name="accessibility_description">Monitors WhatsApp, Messenger, and Telegram screens to automatically start and stop call recording.</string>
 </resources>

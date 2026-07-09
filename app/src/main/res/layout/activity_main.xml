@@ -1,254 +1,94 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/brand_background"
-    android:fillViewport="true">
+    android:orientation="vertical"
+    android:paddingHorizontal="24dp"
+    android:paddingTop="24dp"
+    android:paddingBottom="60dp"
+    android:gravity="bottom"
+    android:background="@color/bg_primary">
 
+    <!-- Empty space to push everything down -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <!-- Status Indicator -->
+    <TextView
+        android:id="@+id/textServiceStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/status_waiting"
+        android:textColor="@color/text_secondary"
+        android:textSize="13sp"
+        android:fontFamily="monospace"
+        android:layout_marginBottom="24dp"
+        android:gravity="center" />
+
+    <!-- Setup Steps -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="24dp">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="MyRecord"
-            android:textColor="@color/brand_ink"
-            android:textSize="28sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:layout_marginBottom="20dp"
-            android:text="Finish these steps to start recording your calls automatically."
-            android:textColor="@color/brand_ink_muted"
-            android:textSize="15sp" />
-
-        <!-- Progress summary -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="20dp"
-            android:background="@color/brand_primary_soft"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:padding="16dp">
-
-            <TextView
-                android:id="@+id/textProgressCount"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="0 of 3"
-                android:textColor="@color/brand_primary"
-                android:textSize="18sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:text="steps completed"
-                android:textColor="@color/brand_ink_muted"
-                android:textSize="14sp" />
-        </LinearLayout>
-
-        <!-- Step 1 -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="0dp"
-            app:strokeColor="@color/brand_divider"
-            app:strokeWidth="1dp"
-            app:cardBackgroundColor="@color/brand_card">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:id="@+id/badgeStep1"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
-                    android:background="@drawable/bg_circle_badge"
-                    android:gravity="center"
-                    android:text="1"
-                    android:textColor="@color/brand_on_primary"
-                    android:textStyle="bold" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="14dp"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Microphone access"
-                        android:textColor="@color/brand_ink"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Needed to capture call audio"
-                        android:textColor="@color/brand_ink_muted"
-                        android:textSize="13sp" />
-                </LinearLayout>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnPermissions"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Grant"
-                    app:cornerRadius="10dp" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Step 2 -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="0dp"
-            app:strokeColor="@color/brand_divider"
-            app:strokeWidth="1dp"
-            app:cardBackgroundColor="@color/brand_card">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:id="@+id/badgeStep2"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
-                    android:background="@drawable/bg_circle_badge"
-                    android:gravity="center"
-                    android:text="2"
-                    android:textColor="@color/brand_on_primary"
-                    android:textStyle="bold" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="14dp"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Accessibility helper"
-                        android:textColor="@color/brand_ink"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Detects when a call starts and ends"
-                        android:textColor="@color/brand_ink_muted"
-                        android:textSize="13sp" />
-                </LinearLayout>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnAccessibility"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Enable"
-                    app:cornerRadius="10dp" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Step 3 -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="0dp"
-            app:strokeColor="@color/brand_divider"
-            app:strokeWidth="1dp"
-            app:cardBackgroundColor="@color/brand_card">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:id="@+id/badgeStep3"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
-                    android:background="@drawable/bg_circle_badge"
-                    android:gravity="center"
-                    android:text="3"
-                    android:textColor="@color/brand_on_primary"
-                    android:textStyle="bold" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="14dp"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Battery restrictions"
-                        android:textColor="@color/brand_ink"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Keeps the recorder alive in the background"
-                        android:textColor="@color/brand_ink_muted"
-                        android:textSize="13sp" />
-                </LinearLayout>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnBattery"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Fix"
-                    app:cornerRadius="10dp" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+        android:layout_marginBottom="32dp">
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnViewRecords"
+            android:id="@+id/btnPermissions"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
             android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:text="View my recordings"
-            android:textAllCaps="false"
-            android:textSize="16sp"
-            app:backgroundTint="@color/brand_primary"
-            app:cornerRadius="14dp" />
+            android:layout_height="60dp"
+            android:text="@string/btn_permissions"
+            android:textColor="@color/text_primary"
+            app:strokeColor="@color/bg_surface_high"
+            app:cornerRadius="12dp" />
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAccessibility"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_marginTop="12dp"
+            android:text="@string/btn_accessibility"
+            android:textColor="@color/text_primary"
+            app:strokeColor="@color/bg_surface_high"
+            app:cornerRadius="12dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnBattery"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_marginTop="12dp"
+            android:text="@string/btn_battery"
+            android:textColor="@color/text_primary"
+            app:strokeColor="@color/bg_surface_high"
+            app:cornerRadius="12dp" />
     </LinearLayout>
-</ScrollView>
+
+    <!-- Progress Text (Hidden visually, used for logic) -->
+    <TextView
+        android:id="@+id/textProgressCount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone" />
+
+    <!-- Hidden badges (Keeping IDs so your Kotlin doesn't crash) -->
+    <TextView android:id="@+id/badgeStep1" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone"/>
+    <TextView android:id="@+id/badgeStep2" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone"/>
+    <TextView android:id="@+id/badgeStep3" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone"/>
+
+    <!-- Main Action Button at the very bottom -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnViewRecords"
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:text="@string/btn_view_records"
+        android:textSize="16sp"
+        android:textColor="@color/bg_primary"
+        app:backgroundTint="@color/brand_primary"
+        app:cornerRadius="16dp" />
+
+</LinearLayout>

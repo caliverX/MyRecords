@@ -20,6 +20,7 @@ class MainActivity : AppCompatActivity() {
 
     private val PERMISSION_REQUEST_CODE = 101
 
+    private lateinit var textServiceStatus: TextView
     private lateinit var badgeStep1: TextView
     private lateinit var badgeStep2: TextView
     private lateinit var badgeStep3: TextView
@@ -34,23 +35,21 @@ class MainActivity : AppCompatActivity() {
         val btnBattery = findViewById<MaterialButton>(R.id.btnBattery)
         val btnViewRecords = findViewById<MaterialButton>(R.id.btnViewRecords)
 
+        textServiceStatus = findViewById(R.id.textServiceStatus)
         badgeStep1 = findViewById(R.id.badgeStep1)
         badgeStep2 = findViewById(R.id.badgeStep2)
         badgeStep3 = findViewById(R.id.badgeStep3)
         textProgressCount = findViewById(R.id.textProgressCount)
 
         btnPermissions.setOnClickListener { requestBasicPermissions() }
-
         btnAccessibility.setOnClickListener {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-            Toast.makeText(this, "Find 'MyRecord' in the list and turn it on", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Find 'MyRecord' and turn it ON", Toast.LENGTH_LONG).show()
         }
-
         btnBattery.setOnClickListener {
             startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
             Toast.makeText(this, "Set MyRecord to 'Unrestricted'", Toast.LENGTH_LONG).show()
         }
-
         btnViewRecords.setOnClickListener {
             startActivity(Intent(this, RecordsActivity::class.java))
         }
@@ -62,28 +61,36 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refreshStepStatus() {
-        val micGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) ==
-                PackageManager.PERMISSION_GRANTED
-        val phoneStateGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) ==
-                PackageManager.PERMISSION_GRANTED
+        val micGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+        val phoneStateGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED
         val accessibilityOn = isAccessibilityServiceEnabled()
         val batteryUnrestricted = isIgnoringBatteryOptimizations()
 
+        // Hidden badges for logic preservation
         setBadgeState(badgeStep1, micGranted && phoneStateGranted, "1")
         setBadgeState(badgeStep2, accessibilityOn, "2")
         setBadgeState(badgeStep3, batteryUnrestricted, "3")
 
-        // ... inside your update logic ...
         val completed = listOf(micGranted && phoneStateGranted, accessibilityOn, batteryUnrestricted).count { it }
-
-       // Use getString with the resource ID and the two integer arguments
         textProgressCount.text = getString(R.string.progress_text, completed, 3)
+
+        // Update UI elements for the user
+        if (completed == 3) {
+            textServiceStatus.text = "● ACTIVE — Listening for VoIP calls"
+            textServiceStatus.setTextColor(getColor(R.color.brand_success))
+        } else {
+            textServiceStatus.text = "○ IDLE — Complete setup below (${completed}/3)"
+            textServiceStatus.setTextColor(getColor(R.color.text_hint))
+        }
+
+        // Update button stroke colors to reflect status
+        findViewById<MaterialButton>(R.id.btnPermissions).strokeColor = getColorStateList(if (micGranted && phoneStateGranted) R.color.brand_success else R.color.bg_surface_high)
+        findViewById<MaterialButton>(R.id.btnAccessibility).strokeColor = getColorStateList(if (accessibilityOn) R.color.brand_success else R.color.bg_surface_high)
+        findViewById<MaterialButton>(R.id.btnBattery).strokeColor = getColorStateList(if (batteryUnrestricted) R.color.brand_success else R.color.bg_surface_high)
     }
 
     private fun setBadgeState(badge: TextView, done: Boolean, stepNumber: String) {
         badge.text = if (done) "\u2713" else stepNumber
-        val colorRes = if (done) R.color.brand_success else R.color.brand_primary
-        badge.background.setTint(ContextCompat.getColor(this, colorRes))
     }
 
     private fun isAccessibilityServiceEnabled(): Boolean {
@@ -102,16 +109,12 @@ class MainActivity : AppCompatActivity() {
             Manifest.permission.RECORD_AUDIO,
             Manifest.permission.READ_PHONE_STATE
         )
-
-        // Add Notification permission for Android 13+ (API 33+)
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
             permissions.add(Manifest.permission.POST_NOTIFICATIONS)
         }
-
         val neededPermissions = permissions.filter {
             ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
         }
-
         if (neededPermissions.isNotEmpty()) {
             ActivityCompat.requestPermissions(this, neededPermissions.toTypedArray(), PERMISSION_REQUEST_CODE)
         } else {
@@ -119,43 +122,19 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode != PERMISSION_REQUEST_CODE) return
-
-        val deniedPermissions = permissions.filterIndexed { index, _ ->
-            grantResults.getOrNull(index) != PackageManager.PERMISSION_GRANTED
-        }
-
+        val deniedPermissions = permissions.filterIndexed { index, _ -> grantResults.getOrNull(index) != PackageManager.PERMISSION_GRANTED }
         if (deniedPermissions.isEmpty()) {
             Toast.makeText(this, "All permissions granted!", Toast.LENGTH_SHORT).show()
             refreshStepStatus()
             return
         }
-
-        val permanentlyDenied = deniedPermissions.any {
-            !ActivityCompat.shouldShowRequestPermissionRationale(this, it)
-        }
-
+        val permanentlyDenied = deniedPermissions.any { !ActivityCompat.shouldShowRequestPermissionRationale(this, it) }
         if (permanentlyDenied) {
-            Toast.makeText(
-                this,
-                "Some permissions were permanently denied. Enable them manually in Settings.",
-                Toast.LENGTH_LONG
-            ).show()
-            startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                data = Uri.fromParts("package", packageName, null)
-            })
-        } else {
-            Toast.makeText(
-                this,
-                "Microphone and phone state permissions are required for call recording to work.",
-                Toast.LENGTH_LONG
-            ).show()
+            Toast.makeText(this, "Permanently denied. Enable manually in Settings.", Toast.LENGTH_LONG).show()
+            startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply { data = Uri.fromParts("package", packageName, null) })
         }
     }
 }

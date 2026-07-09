@@ -13,10 +13,6 @@ object CallTextAnalyzer {
         "video call", "connected", "in call"
     )
 
-    // Deliberately NO bare "end" -- it matches "friend", "weekend", "attend",
-    // "trend", "legend", "recommend", or any contact name containing those
-    // letters, and would kill an active recording on ordinary chat text.
-    // Only specific, unambiguous end-of-call phrases belong here.
     private val endCallPhrases = listOf(
         "call ended", "ending call", "declined", "disconnected", "hung up"
     )
@@ -45,11 +41,31 @@ object RecordingFileNaming {
         return "${sanitizeAppName(appName)}_$timestamp.m4a"
     }
 
-    /** Maps a detected package name to a human-readable app label used in filenames. */
+    /**
+     * Maps a detected package name to a human-readable app label used in filenames.
+     * Has a smart fallback that extracts the app name from any unknown package.
+     */
     fun appNameForPackage(packageName: String): String = when {
         packageName.contains("whatsapp") -> "WhatsApp"
         packageName.contains("telegram") -> "Telegram"
-        packageName.contains("messenger") || packageName.contains("orca") -> "Messenger"
-        else -> "UnknownApp"
+        packageName.contains("messenger") || packageName.contains("orca") || packageName.contains("facebook") -> "Messenger"
+        packageName.contains("signal") -> "Signal"
+        packageName.contains("viber") -> "Viber"
+        packageName.contains("skype") -> "Skype"
+        packageName.contains("discord") -> "Discord"
+        packageName.contains("line") -> "LINE"
+        packageName.contains("zoom") -> "Zoom"
+        packageName.contains("duo") || packageName.contains("meet") -> "Meet"
+        packageName.contains("threema") -> "Threema"
+        packageName.contains("wickr") -> "Wickr"
+        else -> {
+            // Smart fallback: take the last segment of the package name and capitalize it
+            // e.g. "com.somebrand.newapp" -> "Newapp"
+            packageName.split(".")
+                .lastOrNull()
+                ?.takeIf { it.isNotBlank() && it.length > 1 }
+                ?.replaceFirstChar { it.uppercase() }
+                ?: "UnknownApp"
+        }
     }
 }

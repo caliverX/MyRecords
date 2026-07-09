@@ -3,11 +3,11 @@
     android:id="@+id/textDateHeader"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:paddingTop="18dp"
+    android:paddingHorizontal="20dp"
+    android:paddingTop="20dp"
     android:paddingBottom="8dp"
-    android:text="June 12, 2026"
-    android:textAllCaps="true"
-    android:textSize="12sp"
-    android:letterSpacing="0.05"
+    android:text="Today, July 9"
+    android:textColor="@color/brand_primary"
+    android:textSize="13sp"
     android:textStyle="bold"
-    android:textColor="@color/brand_ink_muted" />
+    android:fontFamily="monospace" />
