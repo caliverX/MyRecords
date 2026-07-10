@@ -3,14 +3,17 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/bg_primary">
+    android:background="@color/bg_primary"
+    android:fitsSystemWindows="true">
 
+    <!-- Normal Top Bar -->
     <LinearLayout
         android:id="@+id/layoutTopBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="20dp"
+        android:paddingHorizontal="20dp"
+        android:paddingVertical="12dp"
         android:gravity="center_vertical">
 
         <ImageButton
@@ -42,6 +45,7 @@
             android:background="?attr/selectableItemBackgroundBorderless" />
     </LinearLayout>
 
+    <!-- Multi-Select Action Bar (Hidden by default) -->
     <LinearLayout
         android:id="@+id/layoutMultiSelect"
         android:layout_width="match_parent"
@@ -94,7 +98,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:clipToPadding="false"
-        android:paddingBottom="24dp" />
+        android:paddingBottom="16dp" />
 
     <TextView
         android:id="@+id/textEmptyState"

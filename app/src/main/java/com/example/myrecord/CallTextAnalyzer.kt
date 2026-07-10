@@ -1,11 +1,6 @@
 package com.example.myrecord
 
-/**
- * Pure decision-making logic with no Android dependencies, so it can be
- * unit-tested on the JVM without an emulator.
- */
 object CallTextAnalyzer {
-
     private val timerPattern = Regex("""\d{2}:\d{2}""")
 
     private val activeCallPhrases = listOf(
@@ -29,7 +24,6 @@ object CallTextAnalyzer {
 }
 
 object RecordingFileNaming {
-
     private val unsafeCharsPattern = Regex("[^A-Za-z0-9_-]")
 
     fun sanitizeAppName(appName: String): String {
@@ -41,14 +35,12 @@ object RecordingFileNaming {
         return "${sanitizeAppName(appName)}_$timestamp.m4a"
     }
 
-    /**
-     * Maps a detected package name to a human-readable app label used in filenames.
-     * Has a smart fallback that extracts the app name from any unknown package.
-     */
     fun appNameForPackage(packageName: String): String = when {
         packageName.contains("whatsapp") -> "WhatsApp"
         packageName.contains("telegram") -> "Telegram"
         packageName.contains("messenger") || packageName.contains("orca") || packageName.contains("facebook") -> "Messenger"
+        packageName.contains("instagram") -> "Instagram"
+        packageName.contains("snapchat") -> "Snapchat"
         packageName.contains("signal") -> "Signal"
         packageName.contains("viber") -> "Viber"
         packageName.contains("skype") -> "Skype"
@@ -56,16 +48,9 @@ object RecordingFileNaming {
         packageName.contains("line") -> "LINE"
         packageName.contains("zoom") -> "Zoom"
         packageName.contains("duo") || packageName.contains("meet") -> "Meet"
-        packageName.contains("threema") -> "Threema"
-        packageName.contains("wickr") -> "Wickr"
         else -> {
-            // Smart fallback: take the last segment of the package name and capitalize it
-            // e.g. "com.somebrand.newapp" -> "Newapp"
-            packageName.split(".")
-                .lastOrNull()
-                ?.takeIf { it.isNotBlank() && it.length > 1 }
-                ?.replaceFirstChar { it.uppercase() }
-                ?: "UnknownApp"
+            packageName.split(".").lastOrNull()?.takeIf { it.isNotBlank() && it.length > 1 }
+                ?.replaceFirstChar { it.uppercase() } ?: "UnknownApp"
         }
     }
 }
