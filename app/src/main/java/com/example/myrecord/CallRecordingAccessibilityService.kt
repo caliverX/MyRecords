@@ -24,7 +24,7 @@ class CallRecordingAccessibilityService : AccessibilityService() {
         private const val ERROR_NOTIFICATION_ID = 1002
 
         // BATTERY OPTIMIZATION: Slow poll when idle, fast poll when recording
-        private const val POLL_INTERVAL_IDLE_MS = 3000L
+        private const val POLL_INTERVAL_IDLE_MS = 10000L
         private const val POLL_INTERVAL_ACTIVE_MS = 1500L
         private const val EXIT_CONFIRMATIONS = 2
         private const val TEXT_FAST_STOP_GRACE_MS = 3000L
@@ -32,7 +32,8 @@ class CallRecordingAccessibilityService : AccessibilityService() {
 
     private val allowedPackages = listOf(
         "whatsapp", "telegram", "instagram",
-        "messenger", "orca", "snapchat"
+        "messenger", "orca", "snapchat",
+        "wechat", "tencent.mm" // <-- Added WeChat here
     )
 
     private lateinit var audioManager: AudioManager
@@ -173,7 +174,7 @@ class CallRecordingAccessibilityService : AccessibilityService() {
                         notInCallCount++
                         if (notInCallCount >= EXIT_CONFIRMATIONS) {
                             Log.i(TAG, "Poller: call ended. Stopping.")
-                            stopMonitoring(ignoreGrace = false)
+                            stopMonitoring(ignoreGrace = true)
                             previousMode = mode
                             return
                         }

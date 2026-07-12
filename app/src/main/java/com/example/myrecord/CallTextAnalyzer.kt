@@ -48,6 +48,7 @@ object RecordingFileNaming {
         packageName.contains("line") -> "LINE"
         packageName.contains("zoom") -> "Zoom"
         packageName.contains("duo") || packageName.contains("meet") -> "Meet"
+        packageName.contains("wechat") || packageName.contains("tencent.mm") -> "WeChat"
         else -> {
             packageName.split(".").lastOrNull()?.takeIf { it.isNotBlank() && it.length > 1 }
                 ?.replaceFirstChar { it.uppercase() } ?: "UnknownApp"

@@ -43,8 +43,16 @@ class AudioRecorderHelper(private val context: Context) {
             setAudioSource(source)
             setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
             setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
-            setAudioSamplingRate(44100)
-            setAudioEncodingBitRate(96000)
+
+            // --- OPTIMIZED FOR VOIP ---
+            // 16kHz is perfect for voice (VoIP calls usually transmit at 8-16kHz)
+            setAudioSamplingRate(16000)
+
+            // 24kbps is the standard for voice recordings.
+            // Saves 75% storage space with zero impact on battery/CPU!
+            setAudioEncodingBitRate(24000)
+            // --------------------------
+
             setOutputFile(audioFile.absolutePath)
         }
     }
