@@ -182,7 +182,7 @@ class RecordsActivity : AppCompatActivity() {
         return String.format("%.1f MB", kb / 1024.0)
     }
 
-    // BATTERY OPTIMIZATION: Use MediaMetadataRetriever (100x lighter than MediaPlayer)
+    // BATTERY OPTIMIZATION: Use MediaMetadataRetriever for speed, but safely fall back to MediaPlayer if it fails
     private fun getDurationBackground(file: File, callback: (String) -> Unit) {
         val cached = durationCache[file.absolutePath]
         if (cached != null) { callback(cached); return }
@@ -190,15 +190,36 @@ class RecordsActivity : AppCompatActivity() {
         durationExecutor.execute {
             var durationStr = ""
             var retriever: MediaMetadataRetriever? = null
+            var mediaPlayer: MediaPlayer? = null
+
             try {
+                // Try the fast retriever first
                 retriever = MediaMetadataRetriever()
                 retriever.setDataSource(file.absolutePath)
                 val durMs = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L
-                val durSec = durMs / 1000
-                durationStr = if (durSec < 60) "${durSec}s" else "${durSec / 60}m ${durSec % 60}s"
-                durationCache[file.absolutePath] = durationStr
-            } catch (e: Exception) { durationStr = "" }
-            finally { retriever?.release() }
+
+                if (durMs > 0) {
+                    val durSec = durMs / 1000
+                    durationStr = if (durSec < 60) "${durSec}s" else "${durSec / 60}m ${durSec % 60}s"
+                    durationCache[file.absolutePath] = durationStr
+                }
+            } catch (e: Exception) {
+                Log.w("Records", "Retriever failed, falling back to MediaPlayer")
+                // Fallback to the slower MediaPlayer if the OS blocks the Retriever
+                try {
+                    mediaPlayer = MediaPlayer()
+                    mediaPlayer.setDataSource(file.absolutePath)
+                    mediaPlayer.prepare()
+                    val durSec = mediaPlayer.duration / 1000
+                    durationStr = if (durSec < 60) "${durSec}s" else "${durSec / 60}m ${durSec % 60}s"
+                    durationCache[file.absolutePath] = durationStr
+                } catch (e2: Exception) {
+                    Log.e("Records", "Both retriever and player failed for file: ${file.name}")
+                } finally {
+                    retriever?.release()
+                    mediaPlayer?.release()
+                }
+            }
 
             runOnUiThread { callback(durationStr) }
         }
