@@ -132,9 +132,10 @@ class RecordsActivity : AppCompatActivity() {
             durationCache.remove(it.absolutePath)
         }
 
-        val thirtyDaysMs = 30L * 24 * 60 * 60 * 1000
-        files.filter { System.currentTimeMillis() - it.lastModified() > thirtyDaysMs }.forEach {
-            Log.w("RecordsActivity", "Auto-deleting old file (>30d): ${it.name}")
+        // FINAL POLISH 2: Keep storage clean (Auto-delete files older than 90 days / 3 months)
+        val ninetyDaysMs = 90L * 24 * 60 * 60 * 1000
+        files.filter { System.currentTimeMillis() - it.lastModified() > ninetyDaysMs }.forEach {
+            Log.w("RecordsActivity", "Auto-deleting old file (>90d): ${it.name}")
             it.delete()
             durationCache.remove(it.absolutePath)
         }
@@ -304,6 +305,7 @@ class RecordsActivity : AppCompatActivity() {
                     if (holder.fileDetails != null) holder.fileDetails.text = "$timeStr  · $sizeStr  · $durStr"
                 }
 
+                holder.checkBox.visibility = if (isSelectMode) View.VISIBLE else View.GONE
                 holder.checkBox.visibility = if (isSelectMode) View.VISIBLE else View.GONE
                 holder.checkBox.setOnCheckedChangeListener(null)
                 holder.checkBox.isChecked = selectedFiles.contains(file)
