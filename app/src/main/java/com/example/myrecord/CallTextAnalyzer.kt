@@ -1,22 +1,18 @@
 package com.example.myrecord
 
 object CallTextAnalyzer {
-    // Updated regex to catch 1:05 (Snapchat) and 01:05 (WhatsApp)
-    private val timerPattern = Regex("""\b\d{1,2}:\d{2}\b""")
+    // Removed the timerPattern. Voice notes have timers (0:15) which caused false triggers!
 
+    // Strict phrases that ONLY appear when a call is ringing or connecting
     private val activeCallPhrases = listOf(
         // English
         "ringing", "calling", "ongoing call", "voice call",
-        "video call", "connected", "in call", "tap for sound",
-        "speaker", "muted", "unmuted", "end call", "camera off", "camera on",
+        "video call", "connected", "in call",
 
-        // Arabic (Common UI texts in WhatsApp, Messenger, etc.)
+        // Arabic (Strict)
         "جارٍ الاتصال", "جاري الاتصال", "يجري الاتصال", // Calling
         "مكالمة جارية", "مكالمة صوتية", "مكالمة فيديو", // Ongoing/Voice/Video call
-        "متصل", "في المكالمة", // Connected / In call
-        "مكبر الصوت", "كتم الصوت", "إلغاء كتم الصوت", // Speaker / Muted / Unmuted
-        "إنهاء المكالمة", "إيقاف الكاميرا", "تشغيل الكاميرا", // End call / Camera off/on
-        "اضغط للصوت", "انقر للصوت" // Tap for sound
+        "متصل", "في المكالمة" // Connected / In call
     )
 
     private val endCallPhrases = listOf(
@@ -32,7 +28,8 @@ object CallTextAnalyzer {
 
     fun isCallActive(combinedText: String): Boolean {
         val text = combinedText.lowercase()
-        return activeCallPhrases.any { text.contains(it.lowercase()) } || timerPattern.containsMatchIn(text)
+        // Only trigger on strict phrases, NO timers!
+        return activeCallPhrases.any { text.contains(it.lowercase()) }
     }
 
     fun isCallEndText(combinedText: String): Boolean {
@@ -40,9 +37,6 @@ object CallTextAnalyzer {
         return endCallPhrases.any { text.contains(it.lowercase()) }
     }
 }
-
-// ... Keep the rest of the file (RecordingFileNaming) exactly the same as before
-
 
 object RecordingFileNaming {
     private val unsafeCharsPattern = Regex("[^A-Za-z0-9_-]")
