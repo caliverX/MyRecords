@@ -80,6 +80,7 @@ class AudioRecorderHelper(private val context: Context) {
             return true
         } catch (e: Exception) {
             Log.e("AudioRecorder", "VOICE_RECOGNITION failed: ${e.message}")
+            FileLogger.log("AudioRecorder", "VOICE_RECOGNITION failed: ${e.message}", isError = true)
             recorder.release()
 
             // Restored fallback: without this, a device that rejects
@@ -95,6 +96,7 @@ class AudioRecorderHelper(private val context: Context) {
                 true
             } catch (e2: Exception) {
                 Log.e("AudioRecorder", "CRITICAL: Recording start failed completely: ${e2.message}")
+                FileLogger.log("AudioRecorder", "CRITICAL: Recording start failed completely: ${e2.message}", isError = true)
                 freshRecorder.release()
                 mediaRecorder = null
                 isRecording = false

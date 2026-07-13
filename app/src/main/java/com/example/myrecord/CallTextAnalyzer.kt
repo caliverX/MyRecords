@@ -1,15 +1,16 @@
 package com.example.myrecord
 
 object CallTextAnalyzer {
-    private val timerPattern = Regex("""\d{2}:\d{2}""")
+    private val timerPattern = Regex("""\b\d{1,2}:\d{2}\b""")
 
     private val activeCallPhrases = listOf(
         "ringing", "calling", "ongoing call", "voice call",
-        "video call", "connected", "in call"
+        "video call", "connected", "in call", "tap for sound",
+        "speaker", "muted", "unmuted", "end call", "camera off", "camera on"
     )
 
     private val endCallPhrases = listOf(
-        "call ended", "ending call", "declined", "disconnected", "hung up"
+        "call ended", "ending call", "declined", "disconnected", "hung up", "missed call"
     )
 
     fun isCallActive(combinedText: String): Boolean {
@@ -22,6 +23,7 @@ object CallTextAnalyzer {
         return endCallPhrases.any { text.contains(it) }
     }
 }
+
 
 object RecordingFileNaming {
     private val unsafeCharsPattern = Regex("[^A-Za-z0-9_-]")
@@ -46,8 +48,6 @@ object RecordingFileNaming {
         packageName.contains("skype") -> "Skype"
         packageName.contains("discord") -> "Discord"
         packageName.contains("line") -> "LINE"
-        packageName.contains("zoom") -> "Zoom"
-        packageName.contains("duo") || packageName.contains("meet") -> "Meet"
         packageName.contains("wechat") || packageName.contains("tencent.mm") -> "WeChat"
         else -> {
             packageName.split(".").lastOrNull()?.takeIf { it.isNotBlank() && it.length > 1 }

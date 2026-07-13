@@ -54,6 +54,7 @@ class CallRecordingAccessibilityService : AccessibilityService() {
 
     override fun onServiceConnected() {
         super.onServiceConnected()
+        FileLogger.init(this)
         try {
             audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
             audioRecorderHelper = AudioRecorderHelper(this)
@@ -161,13 +162,13 @@ class CallRecordingAccessibilityService : AccessibilityService() {
                 val prev = previousMode
                 val isAllowedApp = allowedPackages.any { lastForegroundPkg.contains(it) }
 
-                if (!isMonitoring && isAllowedApp && mode == AudioManager.MODE_IN_COMMUNICATION && prev != AudioManager.MODE_IN_COMMUNICATION) {
+                if (!isMonitoring && isAllowedApp && (mode == AudioManager.MODE_IN_COMMUNICATION || mode == AudioManager.MODE_IN_CALL)) {
                     Log.i(TAG, "MODE TRANSITION: ${modeName(prev)} -> ${modeName(mode)} | App: $lastForegroundPkg")
                     startMonitoring(lastForegroundPkg)
                 }
 
                 if (isMonitoring) {
-                    if (mode == AudioManager.MODE_IN_COMMUNICATION) {
+                    if (mode == AudioManager.MODE_IN_COMMUNICATION || mode == AudioManager.MODE_IN_CALL) {
                         everWasInCall = true
                         notInCallCount = 0
                     } else if (everWasInCall) {
@@ -232,6 +233,7 @@ class CallRecordingAccessibilityService : AccessibilityService() {
                 return
             }
             Log.i(TAG, "Recording STARTED: ${appName}_Call")
+            FileLogger.log(TAG, "Recording STARTED: ${appName}_Call in package: $packageNameAtStart")
 
             if (pollerThread == null || !pollerThread!!.isAlive) startPoller(POLL_INTERVAL_ACTIVE_MS)
         } catch (e: SecurityException) {
@@ -252,6 +254,7 @@ class CallRecordingAccessibilityService : AccessibilityService() {
             isMonitoring = false
             audioRecorderHelper?.stopRecording()
             Log.i(TAG, "Recording STOPPED (${elapsed}ms)")
+            FileLogger.log(TAG, "Recording STOPPED (${elapsed}ms)")
         } catch (e: Exception) {
             Log.e(TAG, "Error stopping: ${e.message}", e)
         } finally {

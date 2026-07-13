@@ -14,7 +14,9 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import com.google.android.material.button.MaterialButton
+import java.io.File
 
 class MainActivity : AppCompatActivity() {
 
@@ -34,6 +36,7 @@ class MainActivity : AppCompatActivity() {
         val btnAccessibility = findViewById<MaterialButton>(R.id.btnAccessibility)
         val btnBattery = findViewById<MaterialButton>(R.id.btnBattery)
         val btnViewRecords = findViewById<MaterialButton>(R.id.btnViewRecords)
+        val btnSendLogs = findViewById<MaterialButton>(R.id.btnSendLogs)
 
         textServiceStatus = findViewById(R.id.textServiceStatus)
         badgeStep1 = findViewById(R.id.badgeStep1)
@@ -53,6 +56,9 @@ class MainActivity : AppCompatActivity() {
         btnViewRecords.setOnClickListener {
             startActivity(Intent(this, RecordsActivity::class.java))
         }
+
+        // New Send Logs button
+        btnSendLogs.setOnClickListener { sendLogs() }
     }
 
     override fun onResume() {
@@ -136,5 +142,24 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "Permanently denied. Enable manually in Settings.", Toast.LENGTH_LONG).show()
             startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply { data = Uri.fromParts("package", packageName, null) })
         }
+    }
+
+    // Function to handle sending the log file
+    private fun sendLogs() {
+        val logFile = File(getExternalFilesDir(null), "logs/myrecord_log.txt")
+        if (!logFile.exists()) {
+            Toast.makeText(this, "No logs found yet.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val uri = FileProvider.getUriForFile(this, "${packageName}.provider", logFile)
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            putExtra(Intent.EXTRA_SUBJECT, "MyRecord Bug Logs")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+
+        startActivity(Intent.createChooser(intent, "Send logs to developer via..."))
     }
 }
