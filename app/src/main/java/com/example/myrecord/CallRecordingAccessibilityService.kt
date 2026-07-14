@@ -77,6 +77,16 @@ class CallRecordingAccessibilityService : AccessibilityService() {
         stopPoller()
         recordingStartTime = 0L
         audioRecorderHelper?.cleanup()
+
+        // Fix 3: WakeLock Safety Net. Guarantee it is released if OS kills the service.
+        try {
+            if (wakeLock?.isHeld == true) {
+                wakeLock?.release()
+                FileLogger.log(TAG, "WakeLock forcefully released in cleanup.")
+            }
+        } catch (e: Exception) {
+            FileLogger.log(TAG, "Failed to release WakeLock: ${e.message}", isError = true)
+        }
     }
 
     private fun createNotificationChannels() {

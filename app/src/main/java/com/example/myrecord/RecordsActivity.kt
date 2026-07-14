@@ -7,12 +7,14 @@ import android.media.MediaMetadataRetriever
 import android.media.MediaPlayer
 import android.os.Bundle
 import android.os.Environment
+import android.text.InputType
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.CheckBox
+import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
@@ -33,7 +35,7 @@ class RecordsActivity : AppCompatActivity() {
     private lateinit var textEmptyState: TextView
     private var mediaPlayer: MediaPlayer? = null
     private var currentlyPlayingFile: String? = null
-    private var isPreparing = false // Prevents multi-tap from killing the player
+    private var isPreparing = false
 
     private lateinit var layoutTopBar: View
     private lateinit var layoutMultiSelect: View
@@ -132,9 +134,11 @@ class RecordsActivity : AppCompatActivity() {
             durationCache.remove(it.absolutePath)
         }
 
-        // FINAL POLISH 2: Keep storage clean (Auto-delete files older than 90 days / 3 months)
         val ninetyDaysMs = 90L * 24 * 60 * 60 * 1000
-        files.filter { System.currentTimeMillis() - it.lastModified() > ninetyDaysMs }.forEach {
+        // Updated cleanup: Skip files that contain "_LOCKED"
+        files.filter {
+            System.currentTimeMillis() - it.lastModified() > ninetyDaysMs && !it.name.contains("_LOCKED")
+        }.forEach {
             Log.w("RecordsActivity", "Auto-deleting old file (>90d): ${it.name}")
             it.delete()
             durationCache.remove(it.absolutePath)
@@ -166,11 +170,8 @@ class RecordsActivity : AppCompatActivity() {
         }
 
         stopPlayer()
-
-        // Force hardware volume keys to control Media (Speaker) instead of Call Volume
         volumeControlStream = AudioManager.STREAM_MUSIC
 
-        // Force audio routing to Loudspeaker (Fixes VoIP earpiece bug!)
         try {
             val audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
             audioManager.mode = AudioManager.MODE_NORMAL
@@ -274,6 +275,60 @@ class RecordsActivity : AppCompatActivity() {
         }
     }
 
+    // --- NEW: Logic to Star/Lock a file ---
+    private fun toggleLock(file: File) {
+        val isCurrentlyLocked = file.name.contains("_LOCKED")
+        val newName = if (isCurrentlyLocked) {
+            file.name.replace("_LOCKED", "")
+        } else {
+            file.name.replace(".m4a", "_LOCKED.m4a")
+        }
+        val newFile = File(file.parentFile, newName)
+
+        if (file.renameTo(newFile)) {
+            if (isCurrentlyLocked) {
+                Toast.makeText(this, "Removed from Saved. Will auto-delete after 90 days.", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "Saved! This recording will not be auto-deleted.", Toast.LENGTH_SHORT).show()
+            }
+            loadRecordings()
+        } else {
+            Toast.makeText(this, "Failed to update file.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // --- NEW: Logic to Rename a file ---
+    private fun renameFile(file: File) {
+        val currentName = file.nameWithoutExtension.replace("_LOCKED", "")
+        val input = EditText(this).apply {
+            setText(currentName)
+            setSelection(currentName.length)
+            inputType = InputType.TYPE_CLASS_TEXT
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("Rename Recording")
+            .setView(input)
+            .setPositiveButton("Save") { _, _ ->
+                val newName = input.text.toString().trim()
+                if (newName.isNotEmpty()) {
+                    // Sanitize the name (remove special characters)
+                    val safeName = newName.replace(Regex("[^A-Za-z0-9_ -]"), "")
+                    val suffix = if (file.name.contains("_LOCKED")) "_LOCKED.m4a" else ".m4a"
+                    val newFile = File(file.parentFile, "$safeName$suffix")
+
+                    if (file.renameTo(newFile)) {
+                        Toast.makeText(this, "Renamed successfully", Toast.LENGTH_SHORT).show()
+                        loadRecordings()
+                    } else {
+                        Toast.makeText(this, "Failed to rename file.", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
     sealed class ListItem {
         data class HeaderItem(val date: String) : ListItem()
         data class RecordItem(val file: File) : ListItem()
@@ -297,6 +352,7 @@ class RecordsActivity : AppCompatActivity() {
                 val appName = file.nameWithoutExtension.split("_").getOrElse(0) { "Unknown" }
                 val timeStr = SimpleDateFormat("HH:mm", Locale.US).format(Date(file.lastModified()))
                 val sizeStr = formatFileSize(file.length())
+                val isLocked = file.name.contains("_LOCKED")
 
                 holder.fileName.text = "${appName.replaceFirstChar { it.uppercase() }} Call"
                 holder.fileDetails.text = "$timeStr  ·  $sizeStr  · ..."
@@ -306,7 +362,6 @@ class RecordsActivity : AppCompatActivity() {
                 }
 
                 holder.checkBox.visibility = if (isSelectMode) View.VISIBLE else View.GONE
-                holder.checkBox.visibility = if (isSelectMode) View.VISIBLE else View.GONE
                 holder.checkBox.setOnCheckedChangeListener(null)
                 holder.checkBox.isChecked = selectedFiles.contains(file)
                 holder.checkBox.setOnCheckedChangeListener { _, isChecked ->
@@ -314,6 +369,7 @@ class RecordsActivity : AppCompatActivity() {
                     updateSelectedCount()
                 }
 
+                // Play/Stop Button UI
                 if (currentlyPlayingFile != file.absolutePath) {
                     holder.btnPlay.text = getString(R.string.btn_play)
                     holder.btnPlay.backgroundTintList = getColorStateList(R.color.brand_primary)
@@ -322,17 +378,24 @@ class RecordsActivity : AppCompatActivity() {
                     holder.btnPlay.backgroundTintList = getColorStateList(R.color.brand_danger)
                 }
 
-                // --- THE UI BUG FIX ---
-                // We must attach the click listener directly to the button!
+                // Star/Lock Button UI
+                holder.btnStar.setImageResource(if (isLocked) android.R.drawable.btn_star_big_on else android.R.drawable.btn_star_big_off)
+
+                // Hide action buttons if in Select Mode
+                val actionVisibility = if (isSelectMode) View.GONE else View.VISIBLE
+                holder.btnPlay.visibility = actionVisibility
+                holder.btnStar.visibility = actionVisibility
+                holder.btnRename.visibility = actionVisibility
+
+                // Click Listeners
                 holder.btnPlay.setOnClickListener {
-                    if (isSelectMode) {
-                        holder.checkBox.isChecked = !holder.checkBox.isChecked
-                    } else {
-                        onPlayClicked(file)
-                    }
+                    if (isSelectMode) { holder.checkBox.isChecked = !holder.checkBox.isChecked }
+                    else onPlayClicked(file)
                 }
 
-                // Keep the row clickable for when they tap the text
+                holder.btnStar.setOnClickListener { toggleLock(file) }
+                holder.btnRename.setOnClickListener { renameFile(file) }
+
                 holder.itemView.setOnClickListener {
                     if (isSelectMode) holder.checkBox.isChecked = !holder.checkBox.isChecked
                     else onPlayClicked(file)
@@ -349,6 +412,8 @@ class RecordsActivity : AppCompatActivity() {
             val fileDetails: TextView = view.findViewById(R.id.textFileDetails)
             val btnPlay: Button = view.findViewById(R.id.btnPlayStop)
             val checkBox: CheckBox = view.findViewById(R.id.checkBox)
+            val btnStar: ImageButton = view.findViewById(R.id.btnStar)
+            val btnRename: ImageButton = view.findViewById(R.id.btnRename)
         }
     }
 }
