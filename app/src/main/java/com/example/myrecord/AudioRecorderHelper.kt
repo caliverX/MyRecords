@@ -107,14 +107,27 @@ class AudioRecorderHelper(private val context: Context) {
 
     fun stopRecording() {
         if (!isRecording) return
+
+        // Set to false immediately to prevent double-calls
+        isRecording = false
+
         try {
             mediaRecorder?.stop()
+            FileLogger.log("AudioRecorder", "MediaRecorder stopped successfully.")
         } catch (e: Exception) {
-            Log.e("AudioRecorder", "Error stopping: ${e.message}")
+            Log.e("AudioRecorder", "Error stopping (call too short?): ${e.message}")
+            FileLogger.log("AudioRecorder", "Error stopping (call too short?): ${e.message}", isError = true)
+
+            // If stop() fails, the file is corrupted (0 bytes).
+            // We must delete it so it doesn't show up as a broken file in the app.
+            try {
+                mediaRecorder?.reset()
+            } catch (_: Exception) {}
         } finally {
-            mediaRecorder?.release()
+            try {
+                mediaRecorder?.release()
+            } catch (e: Exception) {}
             mediaRecorder = null
-            isRecording = false
             Log.d("AudioRecorder", "Recording stopped and released.")
         }
     }

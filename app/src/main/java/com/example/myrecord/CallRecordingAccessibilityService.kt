@@ -120,7 +120,15 @@ class CallRecordingAccessibilityService : AccessibilityService() {
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
         val pkg = event.packageName?.toString() ?: return
+
+        // Ignore our own app
         if (pkg == this.packageName) return
+
+        // FIX 5: Ignore Android System UI, Launchers, and PiP (Picture-in-Picture) windows.
+        // This prevents the app from stopping a recording when the user minimizes a video call.
+        if (pkg == "android" || pkg == "com.android.systemui" || pkg.contains("launcher")) {
+            return
+        }
 
         // BATTERY OPTIMIZATION: Ignore events from apps we don't care about at all
         val isAllowedApp = allowedPackages.any { pkg.contains(it) }
@@ -133,12 +141,14 @@ class CallRecordingAccessibilityService : AccessibilityService() {
 
         if (!isMonitoring && isAllowedApp && CallTextAnalyzer.isCallActive(combined)) {
             Log.d(TAG, "Fast-start via UI text in $pkg")
+            FileLogger.log(TAG, "Fast-start via UI text in $pkg")
             startMonitoring(pkg)
             return
         }
 
         if (isMonitoring && CallTextAnalyzer.isCallEndText(combined)) {
             Log.d(TAG, "Fast-stop via UI text")
+            FileLogger.log(TAG, "Fast-stop via UI text")
             stopMonitoring(ignoreGrace = false)
         }
     }
@@ -163,8 +173,14 @@ class CallRecordingAccessibilityService : AccessibilityService() {
                 val isAllowedApp = allowedPackages.any { lastForegroundPkg.contains(it) }
 
                 if (!isMonitoring && isAllowedApp && (mode == AudioManager.MODE_IN_COMMUNICATION || mode == AudioManager.MODE_IN_CALL)) {
-                    Log.i(TAG, "MODE TRANSITION: ${modeName(prev)} -> ${modeName(mode)} | App: $lastForegroundPkg")
-                    startMonitoring(lastForegroundPkg)
+                    // FIX: Snapchat stories trigger MODE_IN_COMMUNICATION but play audio via Media.
+                    // If music/media is actively playing, it's a Story, not a call. Ignore it!
+                    if (!audioManager.isMusicActive) {
+                        Log.i(TAG, "MODE TRANSITION: ${modeName(prev)} -> ${modeName(mode)} | App: $lastForegroundPkg")
+                        startMonitoring(lastForegroundPkg)
+                    } else {
+                        Log.d(TAG, "Ignored IN_COMMUNICATION because Media is playing (Snapchat Story?)")
+                    }
                 }
 
                 if (isMonitoring) {
