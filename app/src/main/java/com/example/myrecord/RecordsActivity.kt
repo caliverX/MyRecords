@@ -89,13 +89,16 @@ class RecordsActivity : AppCompatActivity() {
         recyclerView.adapter?.notifyDataSetChanged()
     }
 
-    private fun updateSelectedCount() { textSelectedCount.text = "${selectedFiles.size} selected" }
+    private fun updateSelectedCount() {
+        textSelectedCount.text = getString(R.string.selected_count, selectedFiles.size)
+    }
 
     private fun deleteSelected() {
         if (selectedFiles.isEmpty()) return
-        AlertDialog.Builder(this).setTitle("Delete ${selectedFiles.size} recording(s)?")
-            .setMessage("This cannot be undone.")
-            .setPositiveButton("Delete") { _, _ ->
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.dialog_delete_title, selectedFiles.size))
+            .setMessage(getString(R.string.dialog_delete_msg))
+            .setPositiveButton(getString(R.string.btn_delete)) { _, _ ->
                 selectedFiles.forEach { file ->
                     if (currentlyPlayingFile == file.absolutePath) {
                         stopPlayer()
@@ -104,10 +107,10 @@ class RecordsActivity : AppCompatActivity() {
                     file.delete()
                     durationCache.remove(file.absolutePath)
                 }
-                Toast.makeText(this, "Deleted", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, R.string.toast_deleted, Toast.LENGTH_SHORT).show()
                 toggleSelectMode(false)
                 loadRecordings()
-            }.setNegativeButton("Cancel", null).show()
+            }.setNegativeButton(getString(R.string.btn_cancel), null).show()
     }
 
     private fun shareSelected() {
@@ -117,7 +120,7 @@ class RecordsActivity : AppCompatActivity() {
             type = "audio/*"
             putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(uris))
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }, "Share Recordings"))
+        }, getString(R.string.share_chooser)))
     }
 
     private fun loadRecordings() {
@@ -135,7 +138,6 @@ class RecordsActivity : AppCompatActivity() {
         }
 
         val ninetyDaysMs = 90L * 24 * 60 * 60 * 1000
-        // Updated cleanup: Skip files that contain "_LOCKED"
         files.filter {
             System.currentTimeMillis() - it.lastModified() > ninetyDaysMs && !it.name.contains("_LOCKED")
         }.forEach {
@@ -206,7 +208,7 @@ class RecordsActivity : AppCompatActivity() {
 
             mediaPlayer!!.setOnErrorListener { mp, what, extra ->
                 isPreparing = false
-                Toast.makeText(this, "Playback error: $what", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.toast_playback_error, what), Toast.LENGTH_SHORT).show()
                 stopPlayer()
                 currentlyPlayingFile = null
                 recyclerView.adapter?.notifyDataSetChanged()
@@ -275,7 +277,6 @@ class RecordsActivity : AppCompatActivity() {
         }
     }
 
-    // --- NEW: Logic to Star/Lock a file ---
     private fun toggleLock(file: File) {
         val isCurrentlyLocked = file.name.contains("_LOCKED")
         val newName = if (isCurrentlyLocked) {
@@ -287,19 +288,20 @@ class RecordsActivity : AppCompatActivity() {
 
         if (file.renameTo(newFile)) {
             if (isCurrentlyLocked) {
-                Toast.makeText(this, "Removed from Saved. Will auto-delete after 90 days.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, R.string.toast_saved_unlocked, Toast.LENGTH_SHORT).show()
             } else {
-                Toast.makeText(this, "Saved! This recording will not be auto-deleted.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, R.string.toast_saved_locked, Toast.LENGTH_SHORT).show()
             }
             loadRecordings()
         } else {
-            Toast.makeText(this, "Failed to update file.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, R.string.toast_update_failed, Toast.LENGTH_SHORT).show()
         }
     }
 
-    // --- NEW: Logic to Rename a file ---
     private fun renameFile(file: File) {
+        val isLocked = file.name.contains("_LOCKED")
         val currentName = file.nameWithoutExtension.replace("_LOCKED", "")
+
         val input = EditText(this).apply {
             setText(currentName)
             setSelection(currentName.length)
@@ -307,25 +309,24 @@ class RecordsActivity : AppCompatActivity() {
         }
 
         AlertDialog.Builder(this)
-            .setTitle("Rename Recording")
+            .setTitle(getString(R.string.dialog_rename_title))
             .setView(input)
-            .setPositiveButton("Save") { _, _ ->
+            .setPositiveButton(getString(R.string.btn_save)) { _, _ ->
                 val newName = input.text.toString().trim()
                 if (newName.isNotEmpty()) {
-                    // Sanitize the name (remove special characters)
                     val safeName = newName.replace(Regex("[^A-Za-z0-9_ -]"), "")
-                    val suffix = if (file.name.contains("_LOCKED")) "_LOCKED.m4a" else ".m4a"
+                    val suffix = if (isLocked) "_LOCKED.m4a" else ".m4a"
                     val newFile = File(file.parentFile, "$safeName$suffix")
 
                     if (file.renameTo(newFile)) {
-                        Toast.makeText(this, "Renamed successfully", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, R.string.toast_renamed, Toast.LENGTH_SHORT).show()
                         loadRecordings()
                     } else {
-                        Toast.makeText(this, "Failed to rename file.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, R.string.toast_rename_failed, Toast.LENGTH_SHORT).show()
                     }
                 }
             }
-            .setNegativeButton("Cancel", null)
+            .setNegativeButton(getString(R.string.btn_cancel), null)
             .show()
     }
 
@@ -369,7 +370,6 @@ class RecordsActivity : AppCompatActivity() {
                     updateSelectedCount()
                 }
 
-                // Play/Stop Button UI
                 if (currentlyPlayingFile != file.absolutePath) {
                     holder.btnPlay.text = getString(R.string.btn_play)
                     holder.btnPlay.backgroundTintList = getColorStateList(R.color.brand_primary)
@@ -378,16 +378,13 @@ class RecordsActivity : AppCompatActivity() {
                     holder.btnPlay.backgroundTintList = getColorStateList(R.color.brand_danger)
                 }
 
-                // Star/Lock Button UI
                 holder.btnStar.setImageResource(if (isLocked) android.R.drawable.btn_star_big_on else android.R.drawable.btn_star_big_off)
 
-                // Hide action buttons if in Select Mode
                 val actionVisibility = if (isSelectMode) View.GONE else View.VISIBLE
                 holder.btnPlay.visibility = actionVisibility
                 holder.btnStar.visibility = actionVisibility
                 holder.btnRename.visibility = actionVisibility
 
-                // Click Listeners
                 holder.btnPlay.setOnClickListener {
                     if (isSelectMode) { holder.checkBox.isChecked = !holder.checkBox.isChecked }
                     else onPlayClicked(file)

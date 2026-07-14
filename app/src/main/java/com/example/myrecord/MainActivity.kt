@@ -47,17 +47,15 @@ class MainActivity : AppCompatActivity() {
         btnPermissions.setOnClickListener { requestBasicPermissions() }
         btnAccessibility.setOnClickListener {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-            Toast.makeText(this, "Find 'MyRecord' and turn it ON", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, R.string.toast_accessibility, Toast.LENGTH_LONG).show()
         }
         btnBattery.setOnClickListener {
             startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
-            Toast.makeText(this, "Set MyRecord to 'Unrestricted'", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, R.string.toast_battery, Toast.LENGTH_LONG).show()
         }
         btnViewRecords.setOnClickListener {
             startActivity(Intent(this, RecordsActivity::class.java))
         }
-
-        // New Send Logs button
         btnSendLogs.setOnClickListener { sendLogs() }
     }
 
@@ -72,7 +70,6 @@ class MainActivity : AppCompatActivity() {
         val accessibilityOn = isAccessibilityServiceEnabled()
         val batteryUnrestricted = isIgnoringBatteryOptimizations()
 
-        // Hidden badges for logic preservation
         setBadgeState(badgeStep1, micGranted && phoneStateGranted, "1")
         setBadgeState(badgeStep2, accessibilityOn, "2")
         setBadgeState(badgeStep3, batteryUnrestricted, "3")
@@ -80,16 +77,14 @@ class MainActivity : AppCompatActivity() {
         val completed = listOf(micGranted && phoneStateGranted, accessibilityOn, batteryUnrestricted).count { it }
         textProgressCount.text = getString(R.string.progress_text, completed, 3)
 
-        // Update UI elements for the user
         if (completed == 3) {
-            textServiceStatus.text = "● ACTIVE — Listening for VoIP calls"
+            textServiceStatus.text = getString(R.string.status_active)
             textServiceStatus.setTextColor(getColor(R.color.brand_success))
         } else {
-            textServiceStatus.text = "○ IDLE — Complete setup below (${completed}/3)"
+            textServiceStatus.text = getString(R.string.status_idle, completed)
             textServiceStatus.setTextColor(getColor(R.color.text_hint))
         }
 
-        // Update button stroke colors to reflect status
         findViewById<MaterialButton>(R.id.btnPermissions).strokeColor = getColorStateList(if (micGranted && phoneStateGranted) R.color.brand_success else R.color.bg_surface_high)
         findViewById<MaterialButton>(R.id.btnAccessibility).strokeColor = getColorStateList(if (accessibilityOn) R.color.brand_success else R.color.bg_surface_high)
         findViewById<MaterialButton>(R.id.btnBattery).strokeColor = getColorStateList(if (batteryUnrestricted) R.color.brand_success else R.color.bg_surface_high)
@@ -124,7 +119,7 @@ class MainActivity : AppCompatActivity() {
         if (neededPermissions.isNotEmpty()) {
             ActivityCompat.requestPermissions(this, neededPermissions.toTypedArray(), PERMISSION_REQUEST_CODE)
         } else {
-            Toast.makeText(this, "Permissions already granted!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, R.string.toast_perm_granted, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -133,22 +128,21 @@ class MainActivity : AppCompatActivity() {
         if (requestCode != PERMISSION_REQUEST_CODE) return
         val deniedPermissions = permissions.filterIndexed { index, _ -> grantResults.getOrNull(index) != PackageManager.PERMISSION_GRANTED }
         if (deniedPermissions.isEmpty()) {
-            Toast.makeText(this, "All permissions granted!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, R.string.toast_perm_granted, Toast.LENGTH_SHORT).show()
             refreshStepStatus()
             return
         }
         val permanentlyDenied = deniedPermissions.any { !ActivityCompat.shouldShowRequestPermissionRationale(this, it) }
         if (permanentlyDenied) {
-            Toast.makeText(this, "Permanently denied. Enable manually in Settings.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, R.string.toast_perm_denied, Toast.LENGTH_LONG).show()
             startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply { data = Uri.fromParts("package", packageName, null) })
         }
     }
 
-    // Function to handle sending the log file
     private fun sendLogs() {
         val logFile = File(getExternalFilesDir(null), "logs/myrecord_log.txt")
         if (!logFile.exists()) {
-            Toast.makeText(this, "No logs found yet.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, R.string.toast_no_logs, Toast.LENGTH_SHORT).show()
             return
         }
 

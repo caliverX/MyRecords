@@ -29,7 +29,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:layout_marginStart="16dp"
-            android:text="Recordings"
+            android:text="@string/title_recordings"
             android:textColor="@color/text_primary"
             android:textSize="20sp"
             android:textStyle="bold" />
@@ -39,7 +39,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="8dp"
-            android:text="Select"
+            android:text="@string/btn_select"
             android:textColor="@color/brand_primary"
             android:textSize="14sp"
             android:background="?attr/selectableItemBackgroundBorderless" />

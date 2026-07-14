@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MyRecord</string>
+    <string name="progress_text">اكتمل %1$d من %2$d</string>
+    <string name="btn_play">▶</string>
+    <string name="btn_stop">■</string>
+    <string name="error_could_not_play">خطأ: %1$s</string>
+
+    <string name="btn_permissions">1. الميكروفون والهاتف</string>
+    <string name="btn_accessibility">2. خدمات إمكانية الوصول</string>
+    <string name="btn_battery">3. البطارية (غير مقيد)</string>
+    <string name="btn_view_records">عرض التسجيلات</string>
+    <string name="status_waiting">خامل — في انتظار مكالمة</string>
+    <string name="no_records">لا توجد تسجيلات بعد.\nقم بإجراء مكالمة واتساب أو ماسنجر.</string>
+
+    <string name="accessibility_description">يراقب شاشات واتساب وماسنجر وتليجرام لبدء وإيقاف تسجيل المكالمات تلقائيًا.</string>
+
+    <!-- New UI Strings -->
+    <string name="status_active">● نشط — يستمع لمكالمات VoIP</string>
+    <string name="status_idle">○ خامل — أكمل الإعداد بالأسفل (%1$d/3)</string>
+    <string name="toast_accessibility">ابحث عن \'MyRecord\' وقم بتشغيله</string>
+    <string name="toast_battery">اضبط MyRecord على \'غير مقيد\'</string>
+    <string name="toast_perm_granted">تم منح جميع الأذونات!</string>
+    <string name="toast_perm_denied">تم الرفض نهائيًا. قم بتمكينه يدويًا من الإعدادات.</string>
+    <string name="toast_no_logs">لا توجد سجلات بعد.</string>
+    <string name="title_recordings">التسجيلات</string>
+    <string name="btn_select">تحديد</string>
+    <string name="selected_count">تم تحديد %1$d</string>
+    <string name="dialog_delete_title">حذف %1$d تسجيل(ات)؟</string>
+    <string name="dialog_delete_msg">لا يمكن التراجع عن هذا الإجراء.</string>
+    <string name="btn_delete">حذف</string>
+    <string name="btn_cancel">إلغاء</string>
+    <string name="toast_deleted">تم الحذف</string>
+    <string name="share_chooser">مشاركة التسجيلات</string>
+    <string name="toast_playback_error">خطأ في التشغيل: %1$s</string>
+    <string name="toast_saved_locked">تم الحفظ! لن يتم حذف هذا التسجيل تلقائيًا.</string>
+    <string name="toast_saved_unlocked">تمت إزالته من المحفوظات. سيتم حذفه تلقائيًا بعد 90 يومًا.</string>
+    <string name="toast_update_failed">فشل تحديث الملف.</string>
+    <string name="dialog_rename_title">إعادة تسمية التسجيل</string>
+    <string name="btn_save">حفظ</string>
+    <string name="toast_renamed">تمت إعادة التسمية بنجاح</string>
+    <string name="toast_rename_failed">فشل إعادة تسمية الملف.</string>
+    <string name="btn_send_logs">إرسال سجل الأخطاء</string>
+</resources>

@@ -87,7 +87,7 @@
         android:layout_width="match_parent"
         android:layout_height="50dp"
         android:layout_marginBottom="12dp"
-        android:text="Send Bug Logs"
+        android:text="@string/btn_send_logs"
         android:textColor="@color/brand_warning"
         app:strokeColor="@color/brand_warning"
         app:cornerRadius="12dp" />

@@ -12,6 +12,32 @@
     <string name="status_waiting">IDLE — Waiting for VoIP call</string>
     <string name="no_records">No recordings yet.\nMake a WhatsApp or Messenger call.</string>
     
-    <!-- Required by accessibility_service_config.xml -->
     <string name="accessibility_description">Monitors WhatsApp, Messenger, and Telegram screens to automatically start and stop call recording.</string>
+
+    <!-- New UI Strings -->
+    <string name="status_active">● ACTIVE — Listening for VoIP calls</string>
+    <string name="status_idle">○ IDLE — Complete setup below (%1$d/3)</string>
+    <string name="toast_accessibility">Find \'MyRecord\' and turn it ON</string>
+    <string name="toast_battery">Set MyRecord to \'Unrestricted\'</string>
+    <string name="toast_perm_granted">All permissions granted!</string>
+    <string name="toast_perm_denied">Permanently denied. Enable manually in Settings.</string>
+    <string name="toast_no_logs">No logs found yet.</string>
+    <string name="title_recordings">Recordings</string>
+    <string name="btn_select">Select</string>
+    <string name="selected_count">%1$d selected</string>
+    <string name="dialog_delete_title">Delete %1$d recording(s)?</string>
+    <string name="dialog_delete_msg">This cannot be undone.</string>
+    <string name="btn_delete">Delete</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="toast_deleted">Deleted</string>
+    <string name="share_chooser">Share Recordings</string>
+    <string name="toast_playback_error">Playback error: %1$s</string>
+    <string name="toast_saved_locked">Saved! This recording will not be auto-deleted.</string>
+    <string name="toast_saved_unlocked">Removed from Saved. Will auto-delete after 90 days.</string>
+    <string name="toast_update_failed">Failed to update file.</string>
+    <string name="dialog_rename_title">Rename Recording</string>
+    <string name="btn_save">Save</string>
+    <string name="toast_renamed">Renamed successfully</string>
+    <string name="toast_rename_failed">Failed to rename file.</string>
+    <string name="btn_send_logs">Send Bug Logs</string>
 </resources>
