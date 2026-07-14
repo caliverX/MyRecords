@@ -306,11 +306,35 @@ class RecordsActivity : AppCompatActivity() {
             setText(currentName)
             setSelection(currentName.length)
             inputType = InputType.TYPE_CLASS_TEXT
+
+            // 1. Force Text to be White
+            setTextColor(getColor(R.color.text_primary))
+            setHintTextColor(getColor(R.color.text_secondary))
+            highlightColor = getColor(R.color.brand_primary)
+
+            // 2. Force Text Box background to be Dark Grey with rounded corners
+            val drawable = android.graphics.drawable.GradientDrawable().apply {
+                setColor(getColor(R.color.bg_surface_high)) // Dark grey (#1E1E1E)
+                cornerRadius = 16f
+            }
+            background = drawable
+            setPadding(30, 20, 30, 20)
         }
 
-        AlertDialog.Builder(this)
+        // Wrap in FrameLayout to prevent touching screen edges
+        val container = android.widget.FrameLayout(this)
+        val params = android.widget.FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+        params.setMargins(50, 20, 50, 0)
+        input.layoutParams = params
+        container.addView(input)
+
+        // Create the dialog
+        val dialog = AlertDialog.Builder(this)
             .setTitle(getString(R.string.dialog_rename_title))
-            .setView(input)
+            .setView(container)
             .setPositiveButton(getString(R.string.btn_save)) { _, _ ->
                 val newName = input.text.toString().trim()
                 if (newName.isNotEmpty()) {
@@ -327,7 +351,25 @@ class RecordsActivity : AppCompatActivity() {
                 }
             }
             .setNegativeButton(getString(R.string.btn_cancel), null)
-            .show()
+            .create()
+
+        // 3. Force the Floating Window to be Black, and fix button colors
+        dialog.setOnShowListener {
+            // Set background to Black (bg_primary)
+            dialog.window?.setBackgroundDrawableResource(R.color.bg_primary)
+
+            // Find and fix the Title color
+            val titleId = resources.getIdentifier("alertTitle", "id", "android")
+            if (titleId > 0) {
+                dialog.findViewById<TextView>(titleId)?.setTextColor(getColor(R.color.text_primary))
+            }
+
+            // Find and fix the Buttons color so they aren't invisible
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(getColor(R.color.brand_primary))
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(getColor(R.color.text_secondary))
+        }
+
+        dialog.show()
     }
 
     sealed class ListItem {
