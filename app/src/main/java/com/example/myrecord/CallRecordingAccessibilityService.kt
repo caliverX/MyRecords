@@ -1,9 +1,12 @@
+
 package com.example.myrecord
 
 import android.accessibilityservice.AccessibilityService
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.media.AudioManager
 import android.os.Build
@@ -13,8 +16,6 @@ import android.os.PowerManager
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import androidx.core.app.NotificationCompat
-import android.app.PendingIntent
-import android.content.Intent
 
 class CallRecordingAccessibilityService : AccessibilityService() {
 
@@ -26,8 +27,8 @@ class CallRecordingAccessibilityService : AccessibilityService() {
         private const val ERROR_NOTIFICATION_ID = 1002
 
         // BATTERY OPTIMIZATION: Slow poll when idle, fast poll when recording
-        private const val POLL_INTERVAL_IDLE_MS = 10000L
-        private const val POLL_INTERVAL_ACTIVE_MS = 1500L
+        private const val POLL_INTERVAL_IDLE_MS = 10000L // 10 seconds for battery
+        private const val POLL_INTERVAL_ACTIVE_MS = 1500L // 1.5 seconds for quick stop
         private const val EXIT_CONFIRMATIONS = 2
         private const val TEXT_FAST_STOP_GRACE_MS = 3000L
     }
@@ -35,7 +36,7 @@ class CallRecordingAccessibilityService : AccessibilityService() {
     private val allowedPackages = listOf(
         "whatsapp", "telegram", "instagram",
         "messenger", "orca", "snapchat",
-        "wechat", "tencent.mm" // <-- Added WeChat here
+        "wechat", "tencent.mm"
     )
 
     private lateinit var audioManager: AudioManager
@@ -45,6 +46,7 @@ class CallRecordingAccessibilityService : AccessibilityService() {
     @Volatile private var isMonitoring = false
     private var recordingStartTime = 0L
     private var packageNameAtStart = ""
+    private var lastTriggerTime = 0L // Fix: Spam protection
 
     private var pollerThread: HandlerThread? = null
     private var pollerHandler: Handler? = null
@@ -56,8 +58,8 @@ class CallRecordingAccessibilityService : AccessibilityService() {
 
     override fun onServiceConnected() {
         super.onServiceConnected()
-        FileLogger.init(this)
         try {
+            FileLogger.init(this) // Initialize logger
             audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
             audioRecorderHelper = AudioRecorderHelper(this)
             wakeLock = (getSystemService(Context.POWER_SERVICE) as PowerManager)
@@ -65,9 +67,9 @@ class CallRecordingAccessibilityService : AccessibilityService() {
             createNotificationChannels()
             previousMode = audioManager.mode
             startPoller(POLL_INTERVAL_IDLE_MS) // Start in low-power mode
-            Log.i(TAG, "Service connected. Battery-optimized polling active.")
+            FileLogger.log(TAG, "Service connected. Battery-optimized polling active.")
         } catch (e: Exception) {
-            Log.e(TAG, "Error init: ${e.message}", e)
+            FileLogger.log(TAG, "Error init: ${e.message}", isError = true)
         }
     }
 
@@ -80,7 +82,7 @@ class CallRecordingAccessibilityService : AccessibilityService() {
         recordingStartTime = 0L
         audioRecorderHelper?.cleanup()
 
-        // Fix 3: WakeLock Safety Net. Guarantee it is released if OS kills the service.
+        // Fix: WakeLock Safety Net. Guarantee it is released if OS kills the service.
         try {
             if (wakeLock?.isHeld == true) {
                 wakeLock?.release()
@@ -153,7 +155,7 @@ class CallRecordingAccessibilityService : AccessibilityService() {
         // Ignore our own app
         if (pkg == this.packageName) return
 
-        // FIX 5: Ignore Android System UI, Launchers, and PiP (Picture-in-Picture) windows.
+        // Fix: Ignore Android System UI, Launchers, and PiP (Picture-in-Picture) windows.
         // This prevents the app from stopping a recording when the user minimizes a video call.
         if (pkg == "android" || pkg == "com.android.systemui" || pkg.contains("launcher")) {
             return
@@ -202,13 +204,17 @@ class CallRecordingAccessibilityService : AccessibilityService() {
                 val isAllowedApp = allowedPackages.any { lastForegroundPkg.contains(it) }
 
                 if (!isMonitoring && isAllowedApp && (mode == AudioManager.MODE_IN_COMMUNICATION || mode == AudioManager.MODE_IN_CALL)) {
-                    // FIX: Snapchat stories trigger MODE_IN_COMMUNICATION but play audio via Media.
-                    // If music/media is actively playing, it's a Story, not a call. Ignore it!
-                    if (!audioManager.isMusicActive) {
+
+                    // Fix: Spotify playing while WhatsApp call comes in? Don't ignore it!
+                    // Only ignore if the app is Snapchat or Instagram (Stories), AND media is playing.
+                    val isStoryApp = lastForegroundPkg.contains("snapchat") || lastForegroundPkg.contains("instagram")
+
+                    if (!(isStoryApp && audioManager.isMusicActive)) {
                         Log.i(TAG, "MODE TRANSITION: ${modeName(prev)} -> ${modeName(mode)} | App: $lastForegroundPkg")
+                        FileLogger.log(TAG, "MODE TRANSITION: ${modeName(prev)} -> ${modeName(mode)} | App: $lastForegroundPkg")
                         startMonitoring(lastForegroundPkg)
                     } else {
-                        Log.d(TAG, "Ignored IN_COMMUNICATION because Media is playing (Snapchat Story?)")
+                        Log.d(TAG, "Ignored IN_COMMUNICATION because Story App + Media is playing")
                     }
                 }
 
@@ -220,7 +226,8 @@ class CallRecordingAccessibilityService : AccessibilityService() {
                         notInCallCount++
                         if (notInCallCount >= EXIT_CONFIRMATIONS) {
                             Log.i(TAG, "Poller: call ended. Stopping.")
-                            stopMonitoring(ignoreGrace = true)
+                            FileLogger.log(TAG, "Poller: call ended. Stopping.")
+                            stopMonitoring(ignoreGrace = true) // Fix: force true to prevent stuck recordings
                             previousMode = mode
                             return
                         }
@@ -252,6 +259,11 @@ class CallRecordingAccessibilityService : AccessibilityService() {
 
     private fun startMonitoring(pkg: String) {
         if (isMonitoring) return
+
+        // Fix: Spam protection. Ignore triggers if a call started less than 3 seconds ago.
+        if (System.currentTimeMillis() - lastTriggerTime < 3000) return
+        lastTriggerTime = System.currentTimeMillis()
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && audioManager.isMicrophoneMute) {
             showStatusNotification("Blocked", "Unmute microphone.", isError = true); return
         }
@@ -262,11 +274,13 @@ class CallRecordingAccessibilityService : AccessibilityService() {
 
             recordingStartTime = System.currentTimeMillis()
             packageNameAtStart = pkg.ifBlank { "UnknownApp" }
-            everWasInCall = (audioManager.mode == AudioManager.MODE_IN_COMMUNICATION)
+            everWasInCall = (audioManager.mode == AudioManager.MODE_IN_COMMUNICATION || audioManager.mode == AudioManager.MODE_IN_CALL)
             notInCallCount = 0
             previousMode = audioManager.mode
 
-            if (wakeLock?.isHeld == false) wakeLock?.acquire(10 * 60 * 1000L)
+            // Fix: Remove the 10-minute timeout. It will now stay awake for a 2-hour call if needed.
+            if (wakeLock?.isHeld == false) wakeLock?.acquire()
+
             startForegroundSafely()
 
             val appName = RecordingFileNaming.appNameForPackage(packageNameAtStart)
@@ -286,6 +300,7 @@ class CallRecordingAccessibilityService : AccessibilityService() {
             stopMonitoring(ignoreGrace = true)
         } catch (e: Exception) {
             Log.e(TAG, "Error: ${e.message}", e)
+            FileLogger.log(TAG, "Error starting monitoring: ${e.message}", isError = true)
             stopMonitoring(ignoreGrace = true)
         }
     }
@@ -302,6 +317,7 @@ class CallRecordingAccessibilityService : AccessibilityService() {
             FileLogger.log(TAG, "Recording STOPPED (${elapsed}ms)")
         } catch (e: Exception) {
             Log.e(TAG, "Error stopping: ${e.message}", e)
+            FileLogger.log(TAG, "Error stopping recording: ${e.message}", isError = true)
         } finally {
             // Release wakelock IMMEDIATELY to save battery
             try { if (wakeLock?.isHeld == true) wakeLock?.release() } catch (e: Exception) {}
