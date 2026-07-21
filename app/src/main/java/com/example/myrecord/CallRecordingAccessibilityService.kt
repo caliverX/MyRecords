@@ -155,13 +155,11 @@ class CallRecordingAccessibilityService : AccessibilityService() {
         // Ignore our own app
         if (pkg == this.packageName) return
 
-        // Fix: Ignore Android System UI, Launchers, and PiP (Picture-in-Picture) windows.
-        // This prevents the app from stopping a recording when the user minimizes a video call.
+        // Ignore Android System UI, Launchers, and PiP windows.
         if (pkg == "android" || pkg == "com.android.systemui" || pkg.contains("launcher")) {
             return
         }
 
-        // BATTERY OPTIMIZATION: Ignore events from apps we don't care about at all
         val isAllowedApp = allowedPackages.any { pkg.contains(it) }
         if (!isAllowedApp && !isMonitoring) return
 
@@ -171,10 +169,24 @@ class CallRecordingAccessibilityService : AccessibilityService() {
         val combined = "$eventText $contentDesc"
 
         if (!isMonitoring && isAllowedApp && CallTextAnalyzer.isCallActive(combined)) {
-            Log.d(TAG, "Fast-start via UI text in $pkg")
-            FileLogger.log(TAG, "Fast-start via UI text in $pkg")
-            startMonitoring(pkg)
-            return
+            // FIX: Prevent Reels/Ads from triggering recording!
+            // Even if the app sees the word "Calling", it must verify with Android hardware
+            // that the phone is ACTUALLY in a VoIP call audio mode.
+            val mode = audioManager.mode
+            val isAudioInCall = mode == AudioManager.MODE_IN_COMMUNICATION || mode == AudioManager.MODE_IN_CALL
+
+            // Also ensure no background media is playing if it's a story app
+            val isStoryApp = pkg.contains("snapchat") || pkg.contains("instagram")
+            val isMediaPlaying = audioManager.isMusicActive
+
+            if (isAudioInCall && !(isStoryApp && isMediaPlaying)) {
+                Log.d(TAG, "Fast-start via UI text in $pkg")
+                FileLogger.log(TAG, "Fast-start via UI text in $pkg")
+                startMonitoring(pkg)
+                return
+            } else {
+                Log.d(TAG, "Saw call text in $pkg, but ignored because Audio Mode is Normal or Media is playing.")
+            }
         }
 
         if (isMonitoring && CallTextAnalyzer.isCallEndText(combined)) {

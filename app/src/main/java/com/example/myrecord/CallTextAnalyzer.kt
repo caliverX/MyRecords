@@ -1,18 +1,16 @@
 package com.example.myrecord
 
 object CallTextAnalyzer {
-    // Removed the timerPattern. Voice notes have timers (0:15) which caused false triggers!
-
     // Strict phrases that ONLY appear when a call is ringing or connecting
     private val activeCallPhrases = listOf(
         // English
         "ringing", "calling", "ongoing call", "voice call",
-        "video call", "connected", "in call",
+        "video call", // Removed "connected" and "in call" (too generic for Reels/Ads)
 
         // Arabic (Strict)
         "جارٍ الاتصال", "جاري الاتصال", "يجري الاتصال", // Calling
-        "مكالمة جارية", "مكالمة صوتية", "مكالمة فيديو", // Ongoing/Voice/Video call
-        "متصل", "في المكالمة" // Connected / In call
+        "مكالمة جارية", "مكالمة صوتية", "مكالمة فيديو"  // Ongoing/Voice/Video call
+        // Removed "متصل" (means online/connected, used everywhere in Instagram)
     )
 
     private val endCallPhrases = listOf(
@@ -28,7 +26,6 @@ object CallTextAnalyzer {
 
     fun isCallActive(combinedText: String): Boolean {
         val text = combinedText.lowercase()
-        // Only trigger on strict phrases, NO timers!
         return activeCallPhrases.any { text.contains(it.lowercase()) }
     }
 
